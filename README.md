@@ -25,7 +25,7 @@
 ## 🛠️ 기술 스택
 | 구분 | 활용 언어 |
 |------|------|
-| Frontend | JavaScript |
+| Frontend | ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) |
 | Backend | Python |
 | Database | Python |
 | 협업 도구 | Git, GitHub |
