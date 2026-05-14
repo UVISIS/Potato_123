@@ -78,7 +78,6 @@
 
 ---
 <br>
-<br>
 
 ## 계층 구조 다이어그램
 
@@ -128,6 +127,7 @@ graph LR
     style CSC05 fill:#4b5563,color:#ffffff,stroke:#374151
     style CSC06 fill:#4b5563,color:#ffffff,stroke:#374151
 ```
+<br>
 
 ---
 
@@ -149,9 +149,10 @@ graph LR
 | **서브유닛 수** | 3개 | 3개 | 4개 |
 | **특이사항** | 마스터 데이터 관리 | 실시간 알림 포함 | Supabase + 검색엔진 |
 
+---
+<br>
 
-...
-
+---
 <img width="461" height="850" alt="image" src="https://github.com/user-attachments/assets/7258ca3a-196e-4011-b38c-f028b406376d" />
 
-...
+---
