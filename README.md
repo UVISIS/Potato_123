@@ -83,7 +83,7 @@
 ## 계층 구조 다이어그램 (텍스트 기반)
 
 ```mermaid
-graph TD
+graph LR
     ROOT["🛩️ CSCI 시스템"]
 
     ROOT --> CSC01["📋 CSC-01\n운영 관리"]
