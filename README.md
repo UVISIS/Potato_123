@@ -129,7 +129,6 @@ graph LR
 ```
 <br>
 
----
 
 ## 모듈별 카드 요약
 
@@ -152,7 +151,6 @@ graph LR
 ---
 <br>
 
----
 <img width="461" height="850" alt="image" src="https://github.com/user-attachments/assets/7258ca3a-196e-4011-b38c-f028b406376d" />
 
 ---
