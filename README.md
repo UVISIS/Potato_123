@@ -149,8 +149,3 @@ graph LR
 | **특이사항** | 마스터 데이터 관리 | 실시간 알림 포함 | Supabase + 검색엔진 |
 
 ---
-<br>
-
-<img width="461" height="850" alt="image" src="https://github.com/user-attachments/assets/7258ca3a-196e-4011-b38c-f028b406376d" />
-
----
