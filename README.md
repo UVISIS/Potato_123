@@ -80,7 +80,7 @@
 <br>
 <br>
 
-## CSCI 계층 구조 다이어그램
+## 계층 구조 다이어그램
 
 ```mermaid
 graph LR
