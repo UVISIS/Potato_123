@@ -78,57 +78,7 @@
 
 ---
 <br>
-
-## 계층 구조 다이어그램
-
-```mermaid
-graph LR
-    ROOT["🛩️ CSCI 시스템"]
-
-    ROOT --> CSC01["📋 CSC-01\n운영 관리"]
-    ROOT --> CSC02["⭐ CSC-02\n스마트 발주 스케줄러"]
-    ROOT --> CSC03["⭐ CSC-03\n주기정비 카운터"]
-    ROOT --> CSC04["⭐ CSC-04\nMRO 리스크 관리"]
-    ROOT --> CSC05["📊 CSC-05\n대시보드 & 모니터링"]
-    ROOT --> CSC06["🔧 CSC-06\n기술 인프라"]
-
-    CSC01 --> U0101["CSU-01-01\n항공기 관리"]
-    CSC01 --> U0102["CSU-01-02\n정비 관리"]
-    CSC01 --> U0103["CSU-01-03\n부품/자재 관리"]
-
-    CSC02 --> U0201["CSU-02-01\n안전재고 분석"]
-    CSC02 --> U0202["CSU-02-02\n환율 분석 & 최적시점"]
-    CSC02 --> U0203["CSU-02-03\n장기납기 역산"]
-    CSC02 --> U0204["CSU-02-04\n발주 추천"]
-
-    CSC03 --> U0301["CSU-03-01\n검사 도래시점 판단"]
-    CSC03 --> U0302["CSU-03-02\nD-Time 카운팅"]
-    CSC03 --> U0303["CSU-03-03\nBOM & 재고 관리"]
-
-    CSC04 --> U0401["CSU-04-01\n지연감지 & 판별"]
-    CSC04 --> U0402["CSU-04-02\n52주 리스크 알고리즘"]
-    CSC04 --> U0403["CSU-04-03\n알림 & 리포트"]
-
-    CSC05 --> U0501["CSU-05-01\n메인 대시보드"]
-    CSC05 --> U0502["CSU-05-02\n차트 & 시각화"]
-    CSC05 --> U0503["CSU-05-03\n실시간 알림"]
-
-    CSC06 --> U0601["CSU-06-01\nREST API"]
-    CSC06 --> U0602["CSU-06-02\n인증 & 보안"]
-    CSC06 --> U0603["CSU-06-03\n데이터베이스 (Supabase)"]
-    CSC06 --> U0604["CSU-06-04\n검색 엔진"]
-
-    %% 스타일 정의
-    style ROOT fill:#1a2744,color:#ffffff,stroke:#1a2744
-    style CSC02 fill:#2563eb,color:#ffffff,stroke:#1d4ed8
-    style CSC03 fill:#2563eb,color:#ffffff,stroke:#1d4ed8
-    style CSC04 fill:#2563eb,color:#ffffff,stroke:#1d4ed8
-    style CSC01 fill:#4b5563,color:#ffffff,stroke:#374151
-    style CSC05 fill:#4b5563,color:#ffffff,stroke:#374151
-    style CSC06 fill:#4b5563,color:#ffffff,stroke:#374151
-```
 <br>
-
 
 ## 모듈별 카드 요약
 
