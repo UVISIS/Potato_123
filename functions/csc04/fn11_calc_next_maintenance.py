@@ -126,10 +126,7 @@ def calc_next_maintenance(
         due_hours_raw    = s.get("due_hours")
         interval_hours   = float(s["interval_hours"]) if s.get("interval_hours") else 0.0
 
-        # 날짜 기반 판별:
-        # 1) due_hours 가 None 인 경우 (시간 기산점 미설정)
-        # 2) interval_hours == 0 인 경우 (순수 날짜 주기 — 예: V-Ribbed belt 5년)
-        # 두 경우 모두 시간 계산 불가 → "날짜기반" 처리 (5주차에 due_date 기반 로직 추가 예정)
+        # due_hours=None(기산점 없음) 또는 interval_hours=0(날짜 주기)은 시간 계산 불가 → 날짜기반
         is_date_based = (due_hours_raw is None) or (interval_hours == 0.0)
 
         if is_date_based:

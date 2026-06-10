@@ -102,9 +102,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
 
     metrics: dict[str, float] = {}
 
-    # ────────────────────────────────────────────
     # 1. 항공기 현황
-    # ────────────────────────────────────────────
     try:
         ac_all = client.table("aircraft").select("id, status").execute()
         ac_data = ac_all.data or []
@@ -118,9 +116,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
     except Exception as e:
         raise RuntimeError(f"aircraft 집계 실패: {e}")
 
-    # ────────────────────────────────────────────
     # 2. 정비 임박/초과 현황 (d_time_counter 기준)
-    # ────────────────────────────────────────────
     try:
         dtc = client.table("d_time_counter").select("hours_remaining").execute()
         dtc_data = dtc.data or []
@@ -146,9 +142,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
     except Exception as e:
         raise RuntimeError(f"d_time_counter 집계 실패: {e}")
 
-    # ────────────────────────────────────────────
     # 3. 알람 현황
-    # ────────────────────────────────────────────
     try:
         alarms = (
             client.table("maintenance_alarms")
@@ -164,9 +158,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
     except Exception as e:
         raise RuntimeError(f"maintenance_alarms 집계 실패: {e}")
 
-    # ────────────────────────────────────────────
     # 4. 재고 현황 (parts_inventory × reorder_points 조합)
-    # ────────────────────────────────────────────
     try:
         inv = client.table("parts_inventory").select("part_id, quantity_on_hand").execute()
         rp  = client.table("reorder_points").select("part_id, safety_stock").execute()
@@ -200,9 +192,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
     except Exception as e:
         raise RuntimeError(f"재고 집계 실패: {e}")
 
-    # ────────────────────────────────────────────
     # 5. 이번 달 비행시간 합계
-    # ────────────────────────────────────────────
     try:
         today       = date.today()
         month_start = date(today.year, today.month, 1).isoformat()
@@ -217,9 +207,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
     except Exception as e:
         raise RuntimeError(f"flight_hours 집계 실패: {e}")
 
-    # ────────────────────────────────────────────
     # 6. 이번 달 완료된 정비 수
-    # ────────────────────────────────────────────
     try:
         today       = date.today()
         month_start = date(today.year, today.month, 1).isoformat()
@@ -234,11 +222,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
     except Exception as e:
         raise RuntimeError(f"maintenance_schedule 집계 실패: {e}")
 
-    # ────────────────────────────────────────────
-    # dashboard_metrics UPSERT
-    # ────────────────────────────────────────────
-    # metric_name 기준으로 행이 있으면 UPDATE, 없으면 INSERT
-    # Supabase upsert: on_conflict 로 처리
+    # dashboard_metrics UPSERT (metric_name on_conflict)
     upsert_rows = [
         {
             "metric_name":  name,

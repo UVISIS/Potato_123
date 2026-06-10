@@ -104,9 +104,7 @@ def analyze_safety_stock(
         raise ValueError(f"part_id {part_id} 에 해당하는 부품이 없습니다.")
     nomenclature: str = comp.data["nomenclature"]
 
-    # ── safety_stock_qty 결정
-    # 파라미터로 직접 전달된 경우 DB 조회 없이 사용
-    # None 이면 reorder_points.safety_stock 자동 조회
+    # ── safety_stock_qty 결정 (파라미터 우선, None이면 reorder_points 자동 조회)
     safety_stock_source: str
     if safety_stock_qty is not None:
         safety_stock_source = "parameter"
@@ -151,10 +149,7 @@ def analyze_safety_stock(
         else round(current_qty / avg_daily_usage, 1)
     )
 
-    # ── 상태 판정
-    # 부족: current_qty ≤ safety_stock_qty         → order_required=True
-    # 경고: current_qty ≤ safety_stock_qty × 1.5   → order_required=False, 선제 발주 고려
-    # 정상: current_qty > safety_stock_qty × 1.5
+    # ── 상태 판정 (부족 ≤ ss < 경고 ≤ ss×1.5 < 정상)
     shortage_qty:   int  = max(0, safety_stock_qty - current_qty)
     order_required: bool = current_qty <= safety_stock_qty
 

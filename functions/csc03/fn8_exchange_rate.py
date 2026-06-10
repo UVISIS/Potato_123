@@ -40,16 +40,13 @@ from datetime import datetime, timezone
 from statistics import mean, stdev
 
 
-# ──────────────────────────────────────────────────────────────
 # 상수
-# ──────────────────────────────────────────────────────────────
 WINDOW_DEFAULT = 60          # 기본 이동평균 기준 개수 (월 1회 입력 시 ≒ 5년)
 STALE_HOURS    = 24 * 7      # 7일 초과 시 stale 경고
 Z_BUY          = -1.0        # Z ≤ -1.0 → 구매 적기
 Z_WAIT         =  1.0        # Z ≥ +1.0 → 구매 보류
 
-# 5년치 실제 EUR/KRW 월별 데이터 (최신순)
-# 출처: exchange-rates.org 연평균 + coincodex 분기 수익률 역산
+# 5년치 EUR/KRW 월별 데이터(최신순, 출처: exchange-rates.org + coincodex 역산)
 _HISTORICAL_RATES = [
     ("2025-12-01", 1685.09), ("2025-11-01", 1669.40), ("2025-10-01", 1653.71),
     ("2025-09-01", 1636.98), ("2025-08-01", 1619.19), ("2025-07-01", 1601.41),
@@ -74,9 +71,7 @@ _HISTORICAL_RATES = [
 ]
 
 
-# ──────────────────────────────────────────────────────────────
-# 0. seed_historical_rates — 5년치 초기 데이터 일괄 INSERT
-# ──────────────────────────────────────────────────────────────
+# 0. seed_historical_rates
 def seed_historical_rates(
     currency_code: str = "EUR",
     base_currency: str = "KRW",
@@ -113,7 +108,7 @@ def seed_historical_rates(
         if existing_count >= 60:
             return {"inserted": 0, "skipped": True, "total_rows": existing_count}
 
-    # 일괄 INSERT (오래된 순으로 insert — update_date 오름차순 유지)
+    # 오래된 것부터 INSERT (update_date 오름차순)
     rows_to_insert = [
         {
             "currency_code": currency_code,
@@ -139,9 +134,7 @@ def seed_historical_rates(
     }
 
 
-# ──────────────────────────────────────────────────────────────
-# 1. record_exchange_rate — 사용자 입력 환율 저장
-# ──────────────────────────────────────────────────────────────
+# 1. record_exchange_rate
 def record_exchange_rate(
     exchange_rate: float,
     currency_code: str = "EUR",
@@ -204,9 +197,7 @@ def record_exchange_rate(
     }
 
 
-# ──────────────────────────────────────────────────────────────
-# 2. get_exchange_rate — 최신 환율 조회
-# ──────────────────────────────────────────────────────────────
+# 2. get_exchange_rate
 def get_exchange_rate(
     currency_code: str = "EUR",
     base_currency: str = "KRW",
@@ -258,9 +249,7 @@ def get_exchange_rate(
     }
 
 
-# ──────────────────────────────────────────────────────────────
-# 3. get_rolling_average — 이동평균 조회
-# ──────────────────────────────────────────────────────────────
+# 3. get_rolling_average
 def get_rolling_average(
     currency_code: str = "EUR",
     base_currency: str = "KRW",
@@ -318,9 +307,7 @@ def get_rolling_average(
     }
 
 
-# ──────────────────────────────────────────────────────────────
-# 4. evaluate_purchase_timing — 구매 시점 판단
-# ──────────────────────────────────────────────────────────────
+# 4. evaluate_purchase_timing
 def evaluate_purchase_timing(
     currency_code: str = "EUR",
     base_currency: str = "KRW",

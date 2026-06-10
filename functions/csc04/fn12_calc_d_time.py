@@ -117,9 +117,7 @@ def calc_d_time(
     interval_hours     = float(interval_hours_raw) if interval_hours_raw else 0.0
     due_hours_raw      = sch.data.get("due_hours")
 
-    # ── 날짜기반 스케줄 판별 (interval_hours=0 OR due_hours=None)
-    # interval_hours=0 이면 remaining_pct 계산 시 ZeroDivisionError 발생
-    # → 시간 기반 계산 불가 → days_remaining만 제공, status="날짜기반"
+    # ── 날짜기반 판별 (interval_hours=0이면 remaining_pct 나눗셈 시 ZeroDivisionError)
     is_date_based = (interval_hours == 0.0) or (due_hours_raw is None)
 
     if is_date_based:
@@ -185,15 +183,7 @@ def calc_d_time(
 
 
 def _estimate_days(client, aircraft_id: int, hours_remaining: float) -> int:
-    """
-    잔여시간 기준 예상 잔여 일수를 계산한다.
-
-    기존 설계서(5월4주차): 총비행시간 / 30.0 (고정 30일 나눗셈)
-    → 비행일이 적을수록 일평균이 실제보다 낮게 추정되는 문제 있음
-       예) 10일간 25h 비행 시: 25/30 = 0.83h/day (실제 2.5h/day)
-
-    수정: 실제 비행 일수 기준으로 나눔 (1 ≤ 실비행일수 ≤ 30 으로 cap)
-    """
+    """최근 30일 실제 비행일수 기준 잔여 일수 추정. 이력 없으면 DEFAULT_DAILY 사용."""
     if hours_remaining <= 0:
         return 0
 

@@ -109,9 +109,7 @@ def update_flight_hours(
     current_total: int = ac.data["total_flight_hours"]
 
     # ── 누적 계산
-    # total_accumulated_hours : float — 소수점 보존 (flight_hours 테이블)
-    # aircraft.total_flight_hours : int — round() 처리 (integer 타입 제약)
-    # ⚠️ P3 타입 변경(integer→numeric) 후에는 round() 제거하고 float 직접 저장
+    # ⚠️ P3 타입변경(integer→numeric) 후 new_aircraft_int = round() 제거 예정
     new_accumulated  = round(current_total + flight_hours_val, 1)
     new_aircraft_int = round(new_accumulated)   # integer 타입 맞춤
 
@@ -136,9 +134,8 @@ def update_flight_hours(
 
     log_id: int = log_res.data[0]["id"]
 
-    # ── aircraft UPDATE (int 변환 후 저장)
-    # INSERT 이후 실패 시 flight_hours 에 이미 커밋된 행이 남음
-    # → RuntimeError 메시지에 log_id 포함하여 수동 복구 가능하게 기록
+    # ── aircraft UPDATE
+    # INSERT 후 여기서 실패 시 flight_hours 행이 이미 커밋됨 — log_id로 수동 복구
     try:
         client.table("aircraft").update({
             "total_flight_hours": new_aircraft_int,

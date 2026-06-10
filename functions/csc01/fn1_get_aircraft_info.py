@@ -107,9 +107,7 @@ def get_aircraft_info(
     data = ac.data
     aircraft_id: int = data["id"]
 
-    # ── 소수점 누적 비행시간 (flight_hours 테이블 최신 행 기준)
-    # aircraft.total_flight_hours 는 integer — 소수점 손실 있음
-    # flight_hours.total_accumulated_hours(numeric) 이 정밀값
+    # aircraft.total_flight_hours는 integer로 소수점 손실 — flight_hours에서 정밀값 조회
     latest_log = (
         client.table("flight_hours")
         .select("total_accumulated_hours")
