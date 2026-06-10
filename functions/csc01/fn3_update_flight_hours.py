@@ -1,27 +1,3 @@
-"""
-CSC-01 · CSU-01-03  |  fn3: update_flight_hours()
-
-비행시간 기록 및 aircraft 누적시간 갱신
-
-호출 테이블:
-    flight_hours (INSERT)  — 금일 비행 이력 신규 기록
-    aircraft     (UPDATE)  — total_flight_hours 누적 갱신
-
-수정 이력:
-    2026-05-27 (5월4주차) — Supabase 스키마 반영
-        · aircraft_id: str → int (FK) 변경
-        · engine_hours / propeller_hours 파라미터 제거
-          (flight_hours / flight_minutes 로 통합)
-        · float → int 변환 로직 추가
-          (aircraft.total_flight_hours 가 integer 타입)
-        · INSERT 성공 후 UPDATE 실패 시 RuntimeError + 불일치 위치 로그
-
-⚠️  DB 변경 예정 사항 (P3):
-    aircraft.total_flight_hours  integer → numeric(8,1) 변경 시
-    → new_aircraft_int = round(new_accumulated) 로직 제거
-    → aircraft UPDATE 페이로드를 float 값으로 직접 저장하도록 수정 필요
-"""
-
 from __future__ import annotations
 from datetime import date, datetime, timezone
 

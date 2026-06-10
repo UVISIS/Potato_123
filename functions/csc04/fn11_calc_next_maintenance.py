@@ -1,31 +1,3 @@
-"""
-CSC-04 · CSU-04-01  |  fn11: calc_next_maintenance()
-
-다음 정비 도래시점 계산 및 상태 판정
-
-호출 테이블:
-    maintenance_schedule (SELECT) — due_hours, interval_hours, status
-    aircraft             (SELECT) — total_flight_hours
-
-수정 이력:
-    2026-05-27 (5월4주차) — Supabase 스키마 반영 (신규 작성)
-    2026-06-03 (수정) — 실제 데이터 기반 보완
-        · interval_hours=0 인 순수 날짜 기반 스케줄 처리 추가
-          (V-Ribbed belt 5년 등 — 시간 주기 없이 개월 수만 존재)
-          기존: due_hours=None → "날짜기반"
-          수정: due_hours=None OR interval_hours=0 → "날짜기반" 통합 처리
-        · active_only 파라미터 추가
-          True 이면 status IN ('scheduled','overdue') 인 스케줄만 조회
-          (기본: True — 완료된 정비는 제외)
-
-⚠️  DB 변경 예정 사항:
-    · 날짜 기반 처리 로직 (due_date + interval_months) 5주차 추가 예정
-    · aircraft.total_flight_hours numeric 변경 (P3) 후
-      float() 형변환 코드 단순화 가능
-    · maintenance_schedule.status 자동 갱신 트리거 (P3) 추가 후
-      fn11 내부 status 판단값을 스케줄 status 에 직접 반영하는 로직 추가 가능
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

@@ -1,25 +1,3 @@
-"""
-CSC-02 · CSU-02-01  |  fn4: get_inventory()
-
-부품 재고 현황 조회 — 기지별/전체, 카테고리·기체별 필터 + 안전재고 대비 상태 판정.
-
-호출 테이블:
-    components      (SELECT) — part_number, nomenclature, category, aircraft_id
-    parts_inventory (SELECT) — quantity_on_hand (기지별 또는 합산)
-    reorder_points  (SELECT) — safety_stock (상태 판정 기준)
-
-수정 이력:
-    2026-06-10 (6월2주차) — 신규 작성
-        · P2 해제(components.aircraft_id NULL 허용) 반영
-          → aircraft_id 지정 시 "해당 기체 전용 부품 + 공통 부품(aircraft_id NULL)" 함께 조회
-        · location: "청주"|"무안" → 해당 기지 재고 / "all" → 양 기지 합산(1행/부품)
-        · 안전재고(reorder_points.safety_stock) 대비 부족/경고/정상 상태 판정
-
-⚠️  주의:
-    · components.quantity(text)는 사용하지 않음. 실재고는 parts_inventory.quantity_on_hand(int).
-    · reorder_points 데이터가 없는 부품은 safety_stock=None, status="기준없음".
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

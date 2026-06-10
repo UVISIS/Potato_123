@@ -1,16 +1,3 @@
-"""
-CSC-01 · CSU-01-01  |  fn1: get_aircraft_info()
-
-항공기 기본 정보 조회
-
-호출 테이블:
-    aircraft (SELECT) — 기체 기본 정보
-    flight_hours (SELECT) — 최근 비행 이력
-    maintenance_schedule (SELECT) — 활성 정비 스케줄 수
-
-⚠️  DB 변경 영향 없음 — 안정 함수
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

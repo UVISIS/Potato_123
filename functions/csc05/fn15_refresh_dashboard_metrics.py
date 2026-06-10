@@ -1,35 +1,3 @@
-"""
-CSC-05  |  fn15: refresh_dashboard_metrics()
-
-대시보드 집계 지표 갱신 — cron 또는 수동 호출
-
-호출 테이블:
-    aircraft            (SELECT) — 기체 현황
-    d_time_counter      (SELECT) — 잔여 시간 기준 정비 임박 집계
-    maintenance_alarms  (SELECT) — 활성 알람 수
-    parts_inventory     (SELECT) — 재고 현황
-    reorder_points      (SELECT) — 안전재고 기준
-    flight_hours        (SELECT) — 이번 달 비행시간
-    maintenance_schedule(SELECT) — 이번 달 완료 정비
-    dashboard_metrics   (UPSERT) — 집계 결과 저장
-
-⚠️  DB 변경 영향 없음 — 안정 함수
-
-집계 지표 목록 (metric_name 기준):
-    aircraft_total          — 전체 항공기 수
-    aircraft_operational    — 운영 중 기체 수
-    aircraft_grounded       — 접지 기체 수
-    maintenance_overdue     — 정비 초과(hours_remaining < 0) 기체·스케줄 수
-    maintenance_critical    — 정비 임박(0 ≤ hours_remaining ≤ 10) 수
-    maintenance_warning     — 정비 주의(10 < hours_remaining ≤ 30) 수
-    alarm_active            — 활성(미확인) 알람 수
-    alarm_critical          — severity='critical' 활성 알람 수
-    stock_shortage          — 재고 부족(qty ≤ safety_stock) 품목 수
-    stock_warning           — 재고 경고(safety_stock < qty ≤ safety_stock×1.5) 품목 수
-    flight_hours_this_month — 이번 달 전체 비행시간 합계
-    maintenance_done_this_month — 이번 달 완료된 정비 스케줄 수
-"""
-
 from __future__ import annotations
 from datetime import datetime, timezone, date
 

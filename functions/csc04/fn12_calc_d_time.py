@@ -1,35 +1,3 @@
-"""
-CSC-04 · CSU-04-02  |  fn12: calc_d_time()
-
-D-Time 카운터 계산 및 갱신
-
-호출 테이블:
-    d_time_counter       (UPDATE or INSERT) — 잔여시간 카운터 갱신
-    maintenance_schedule (SELECT)           — interval_hours, due_hours
-    aircraft             (SELECT)           — total_flight_hours
-    flight_hours         (SELECT)           — 최근 30일 비행 이력 (days_remaining 계산)
-
-수정 이력:
-    2026-05-27 (5월4주차) — Supabase 스키마 반영
-        · d_time_counter 기존 행 확인 → UPDATE / 없으면 INSERT 분기 처리
-        · component_type 파라미터 제거 → maintenance_schedule_id (FK) 로 대체
-        · due_hours 없을 때 current + interval 로 추정
-        · days_remaining: 최근 30일 집계 → 일평균 계산, 없으면 3.0h/day
-    2026-06-03 (수정) — 실제 데이터 기반 보완
-        · interval_hours=0 (순수 날짜기반 스케줄) ZeroDivisionError 방어
-          기존: remaining_pct = hours_remaining / interval_hours → 0 나누기
-          수정: interval_hours=0 이면 remaining_pct=None, status="날짜기반" 반환
-        · _estimate_days: avg 계산 기준 수정
-          기존: 총비행시간 / 30.0 (고정 30일로 나눔 → 비행일 적을 때 일평균 과소 추정)
-          수정: 총비행시간 / 실제비행일수 (단, 최소 1, 최대 30으로 cap)
-
-⚠️  DB 변경 예정 사항:
-    · aircraft.total_flight_hours numeric 변경 (P3) 후
-      float() 형변환 단순화 가능
-    · maintenance_schedule.status 자동 갱신 트리거 (P3) 추가 후
-      함수 내 status 계산 결과를 트리거에 위임 가능
-"""
-
 from __future__ import annotations
 from datetime import datetime, timezone, timedelta, date
 

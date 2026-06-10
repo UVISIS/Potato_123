@@ -1,26 +1,3 @@
-"""
-CSC-03 · CSU-03-03  |  fn6: calc_order_cost()
-
-발주 비용 산출 — 부품 단가(EUR) × 수량 → EUR 합계 → 적용환율 → KRW 합계
-선택적으로 purchase_orders 발주서 행을 생성한다.
-
-호출 테이블:
-    components      (SELECT) — unit_price_eur, nomenclature (단가 미지정 시 자동 조회)
-    currency_rates  (SELECT) — 최신 EUR/KRW 환율 (환율 미지정 시 자동 조회)
-    purchase_orders (INSERT) — create_order=True 일 때 발주서 생성
-
-수정 이력:
-    2026-06-10 (6월2주차) — 신규 작성
-        · P1 해제(purchase_orders 신설, components.unit_price_eur, exchange_rate 컬럼) 반영
-        · 단가/환율 미지정 시 DB 자동 조회 (파라미터 우선)
-        · 순수 "발주 원가"만 계산 — 운임/관세/VAT 는 fn8 영역(여기서 제외)
-
-⚠️  주의:
-    · 환율 자동 조회는 currency_rates 에서 (currency_code='EUR', base_currency='KRW')
-      update_date 최신 1건을 사용. 데이터가 없으면 exchange_rate 파라미터 필수.
-    · total_krw 는 소수점 0자리 반올림(원 단위). total_eur 는 소수점 2자리.
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

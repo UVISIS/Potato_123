@@ -1,27 +1,3 @@
-"""
-CSC-03 · CSU-03-01  |  fn7: analyze_safety_stock()
-
-안전재고 분석 — 부족 여부 및 발주 필요 판단
-
-호출 테이블:
-    components       (SELECT) — nomenclature 조회
-    parts_inventory  (SELECT) — quantity_on_hand (기지별 또는 전체 합산)
-    reorder_points   (SELECT) — safety_stock 자동 조회 (safety_stock_qty=None 시)
-
-수정 이력:
-    2026-05-27 (5월4주차) — Supabase 스키마 반영 (신규 작성)
-    2026-06-03 (수정) — reorder_points 연동 추가
-        · safety_stock_qty=None 이면 reorder_points.safety_stock 자동 조회
-          (기존: 무조건 외부 파라미터 수신)
-        · reorder_points 에 데이터 없고 safety_stock_qty 도 None 이면 ValueError
-
-⚠️  DB 변경 예정 사항:
-    inventory_history 테이블 신설 (P1) 후:
-        · avg_daily_usage 외부 파라미터 → DB 자동 계산으로 전환
-        · 최근 30일 출고 이력에서 일평균 소모량 자동 집계 예정
-        · 파라미터 avg_daily_usage 제거 또는 optional 유지 협의 필요
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

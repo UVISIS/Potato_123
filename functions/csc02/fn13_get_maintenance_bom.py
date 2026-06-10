@@ -1,28 +1,3 @@
-"""
-CSC-02 · CSU-02-04  |  fn13: get_maintenance_bom()
-
-정비 BOM 명세서 조회 — 정비 유형별 소요 부품 정의 + 라인별/총 예상 비용(EUR) 집계.
-
-fn9(get_required_parts)와의 구분:
-    · fn9  : 가용성 점검용 "소요 수량" 중심 평면 리스트 (CSC-04 카운터/스케줄러 입력)
-    · fn13 : 자재관리용 "비용 명세" 중심 — 라인별 단가×수량, 총 예상비용 롤업 (CSC-02 조달계획)
-    ※ 두 함수가 동일 bom 을 읽으므로 역할 경계는 팀 확인 권장(아래 보고서 참조).
-
-호출 테이블:
-    bom        (SELECT) — maintenance_type(+aircraft_model) 별 소요 부품/수량/단위
-    components (SELECT) — nomenclature, part_number, category, unit_price_eur 병합
-
-수정 이력:
-    2026-06-10 (6월2주차) — 신규 작성
-        · P2 해제(bom 테이블 신설) 반영
-        · 라인별 line_cost_eur = required_qty × unit_price_eur, 총합 롤업
-        · 단가 누락(unit_price_eur=None) 라인은 비용 0 처리 + missing_price 플래그
-
-⚠️  주의:
-    · 총 예상비용은 EUR 기준. KRW 환산은 fn6(calc_order_cost)/fn8 환율 적용 영역.
-    · 단가 없는 부품이 1개 이상이면 total_estimated_eur 는 과소추정 → has_missing_price=True 로 표기.
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

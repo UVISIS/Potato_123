@@ -1,28 +1,3 @@
-"""
-CSC-04 · CSU-04-03 / CSU-04-04  |  fn9: get_required_parts() + fn10: check_parts_availability()
-
-정비 유형별 소요 부품 산출(fn9)과 현재고 대비 가용성 점검(fn10).
-두 함수는 의존성이 강해 단일 파일로 관리한다.
-    · API import 경로:
-        from functions.csc04.fn9_fn10_parts_check import get_required_parts, check_parts_availability
-
-호출 테이블:
-    bom             (SELECT) — maintenance_type(+aircraft_model) 별 소요 부품/수량
-    components      (SELECT) — nomenclature, part_number, unit_price_eur 병합
-    parts_inventory (SELECT) — quantity_on_hand (가용성 점검, fn10)
-
-수정 이력:
-    2026-06-10 (6월2주차) — 신규 작성
-        · P2 해제(bom 테이블 신설) 반영
-        · bom rows=0 이어도 빈 결과 정상 반환(예외 아님) — 데이터 적재 후 즉시 동작
-        · fn10 은 fn9 결과를 입력으로 사용 (중복 조회 방지)
-
-⚠️  주의:
-    · bom 은 (maintenance_type, aircraft_model, part_id) 구조. aircraft_model 미지정 시
-      해당 maintenance_type 전체를 반환.
-    · components.quantity(text)는 사용하지 않음. 실재고는 parts_inventory.quantity_on_hand.
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

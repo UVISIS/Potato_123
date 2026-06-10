@@ -1,26 +1,3 @@
-"""
-CSC-04 · CSU-04-05  |  fn14: generate_maintenance_alarms()
-
-정비 임박/초과 알람 생성 — d_time_counter 의 잔여시간/일수를 평가해
-maintenance_alarms 를 생성하고(중복 방지), 선택적으로 notification_logs 에 알림을 적재한다.
-
-호출 테이블:
-    d_time_counter       (SELECT)        — aircraft_id, maintenance_schedule_id, hours_remaining, days_remaining
-    maintenance_schedule (SELECT)        — maintenance_type (알람 메시지용)
-    maintenance_alarms   (SELECT/INSERT) — 활성 알람 중복 확인 + 신규 생성
-    notification_logs    (INSERT)        — create_notifications=True 일 때 알림 적재
-
-수정 이력:
-    2026-06-10 (6월2주차) — 신규 작성
-        · 테이블 구조 확인 완료(maintenance_alarms, notification_logs) 반영
-        · hours_remaining 우선 평가, None(날짜기반)이면 days_remaining 로 대체 평가
-        · (aircraft_id, maintenance_schedule_id, alarm_type) 활성 알람 존재 시 중복 생성 스킵
-
-⚠️  주의:
-    · 임계값은 파라미터로 조정 가능(기본: 초과≤0h / 임박≤10h / 예정≤25h).
-    · fn12(calc_d_time)가 d_time_counter 를 갱신한 뒤 호출하는 흐름을 전제.
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 

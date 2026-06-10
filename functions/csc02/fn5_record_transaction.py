@@ -1,28 +1,3 @@
-"""
-CSC-02 · CSU-02-02  |  fn5: record_transaction()
-
-부품 입출고 기록 — parts_transactions 기록 + parts_inventory 갱신 + inventory_history 적재
-
-호출 테이블:
-    parts_transactions (INSERT)            — 입출고 원장 기록
-    parts_inventory    (SELECT/UPDATE/INSERT) — 현재고(quantity_on_hand) 증감
-    inventory_history  (INSERT)            — 변동 전/후 수량 추적 이력
-
-수정 이력:
-    2026-06-10 (6월2주차) — 신규 작성
-        · P1 해제(inventory_history 신설 + parts_transactions 7개 컬럼 추가) 반영
-        · 트랜잭션 1건 = parts_transactions 1행 + inventory_history 1행 + 재고 갱신
-        · transaction_type: "입고"/"출고"/"조정" 및 영문 "IN"/"OUT"/"ADJUST" 모두 수용
-        · 출고 시 현재고 초과 방어(allow_negative=False 기본)
-
-⚠️  주의 / 향후 변경 예정:
-    · parts_inventory 는 (part_id, location) 단위로 행이 분리됨.
-      location 미지정 시 part_id 의 단일 재고 행을 대상으로 함(여러 행이면 ValueError).
-    · components.quantity 는 여전히 text 타입 → 실재고 계산에 사용하지 않음.
-      실재고는 parts_inventory.quantity_on_hand(integer) 만 신뢰.
-    · DB 트리거로 inventory_history 자동적재가 도입되면 본 함수의 수동 INSERT 제거 가능.
-"""
-
 from __future__ import annotations
 from functions.db import get_client
 
