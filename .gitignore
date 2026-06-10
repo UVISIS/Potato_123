@@ -7,3 +7,7 @@ __pycache__/
 dist/
 build/
 .pytest_cache/
+
+__pycache__/
+*.pyc
+*.pyo
