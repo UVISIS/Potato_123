@@ -6,6 +6,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
 from routers.errors import component_not_found, inventory_not_found, reorder_not_found, insufficient_stock
+# fn 연동
+from functions.csc02.fn4_get_inventory import get_inventory as fn4_get_inventory
+from functions.csc03.fn7_analyze_safety_stock import analyze_safety_stock
 
 router = APIRouter(tags=["CSC-02 부품/자재 관리"])
 
@@ -99,10 +102,11 @@ def update_component(component_id: int, data: ComponentUpdate):
 
 @router.get("/inventory")
 def get_inventory():
-    """재고 전체 목록 조회 (부품 + 재고 + 안전재고)"""
-    inventory = supabase.table("parts_inventory")\
-        .select("*, components(*)")\
-        .execute()
+    """재고 전체 목록 조회 (fn4 래핑)"""
+    try:
+        return fn4_get_inventory()
+    except Exception as e:
+        return {"error": str(e)}
 
     result = []
     for item in inventory.data:

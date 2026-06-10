@@ -6,6 +6,12 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
 from routers.errors import maintenance_not_found, schedule_not_found, db_error
+# fn 연동
+from functions.csc04.fn11_calc_next_maintenance import calc_next_maintenance
+from functions.csc04.fn12_calc_d_time import calc_d_time
+from functions.csc04.fn9_fn10_parts_check import get_required_parts, check_parts_availability as fn10_check
+from functions.csc04.fn14_generate_maintenance_alarms import generate_maintenance_alarms
+
 
 router = APIRouter(prefix="/maintenance", tags=["CSC-04 주기정비 관리"])
 
@@ -159,89 +165,47 @@ def get_d_time(aircraft_id: Optional[int] = None):
 @router.get("/next/{aircraft_id}")
 def get_next_maintenance(aircraft_id: int):
     """다음 정비 도래시점 조회 (fn11 래핑)"""
-    response = supabase.table("maintenance_schedule")\
-        .select("*")\
-        .eq("aircraft_id", aircraft_id)\
-        .order("due_hours").execute()
-    if not response.data:
+    try:
+        return calc_next_maintenance(aircraft_id)
+    except LookupError:
         schedule_not_found(aircraft_id)
-    return response.data
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/d-time/{aircraft_id}")
 def get_d_time_by_aircraft(aircraft_id: int):
     """D-Time 카운터 조회 (fn12 래핑)"""
-    response = supabase.table("d_time_counter")\
-        .select("*, maintenance_schedule(*)")\
-        .eq("aircraft_id", aircraft_id).execute()
-    if not response.data:
+    try:
+        return calc_d_time(aircraft_id)
+    except LookupError:
         schedule_not_found(aircraft_id)
-    return response.data
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/required-parts/{aircraft_id}")
-def get_required_parts(aircraft_id: int, maintenance_type: str):
+def get_required_parts_api(aircraft_id: int, maintenance_type: str):
     """정비 유형별 필요 부품 목록 (fn9 래핑)"""
-    response = supabase.table("components")\
-        .select("*, parts_inventory(*)")\
-        .eq("inspection_interval", maintenance_type).execute()
-    return response.data
+    try:
+        return get_required_parts(str(aircraft_id), maintenance_type)
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/parts-check/{aircraft_id}")
 def check_parts_availability(aircraft_id: int, maintenance_type: str):
     """정비 전 부품 재고 충족 여부 확인 (fn10 래핑)"""
-    parts = supabase.table("components")\
-        .select("*, parts_inventory(*)")\
-        .eq("inspection_interval", maintenance_type).execute()
-
-    shortage = []
-    for part in parts.data:
-        inventory = part.get("parts_inventory")
-        if inventory and isinstance(inventory, list):
-            qty = inventory[0].get("quantity_on_hand", 0) if inventory else 0
-        elif inventory:
-            qty = inventory.get("quantity_on_hand", 0)
-        else:
-            qty = 0
-        if qty <= 0:
-            shortage.append({
-                "part_id": part["id"],
-                "nomenclature": part["nomenclature"],
-                "part_number": part["part_number"],
-                "current_stock": qty
-            })
-
-    return {
-        "available": len(shortage) == 0,
-        "shortage_items": shortage
-    }
+    try:
+        return fn10_check(aircraft_id, maintenance_type)
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.post("/alerts")
 def create_alert(data: AlertCreate):
     """정비/재고 알람 생성 (fn14 래핑)"""
-    # maintenance_alarms INSERT
-    alarm = supabase.table("maintenance_alarms").insert({
-        "aircraft_id": data.aircraft_id,
-        "alarm_type": data.alarm_type,
-        "severity": data.severity,
-        "message": data.message,
-        "maintenance_schedule_id": data.maintenance_schedule_id,
-        "status": "active"
-    }).execute()
-    alarm_id = alarm.data[0]["id"]
-
-    # notification_logs INSERT
-    notification_id = None
-    if data.user_id:
-        notif = supabase.table("notification_logs").insert({
-            "user_id": data.user_id,
-            "notification_type": data.alarm_type,
-            "message": data.message,
-            "is_read": False
-        }).execute()
-        notification_id = notif.data[0]["id"]
-
-    return {
-        "alarm_id": alarm_id,
-        "notification_id": notification_id,
-        "alarm_type": data.alarm_type,
-        "severity": data.severity
-    }
+    try:
+        return generate_maintenance_alarms(
+            aircraft_id=data.aircraft_id,
+            create_notifications=True,
+            notify_user_id=data.user_id
+        )
+    except Exception as e:
+        return {"error": str(e)}

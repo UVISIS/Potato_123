@@ -5,17 +5,22 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
 from routers.errors import aircraft_not_found, exchange_rate_not_found, db_error
+# fn 연동
+from functions.csc05.fn15_refresh_dashboard_metrics import refresh_dashboard_metrics
+from functions.csc03.fn8_exchange_rate import get_exchange_rate, evaluate_purchase_timing
 
 router = APIRouter(tags=["CSC-05/06 대시보드 & 인프라"])
 
 
 # ── CSC-05: 대시보드 & 모니터링 ───────────────
 
-@router.get("/dashboard/metrics")
+@router.get("/metrics")
 def get_dashboard_metrics():
     """대시보드 집계 지표 조회 (fn15 래핑)"""
-    response = supabase.table("dashboard_metrics").select("*").execute()
-    return response.data
+    try:
+        return refresh_dashboard_metrics()
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/dashboard/alerts")
 def get_active_alerts(aircraft_id: Optional[int] = None):
@@ -63,5 +68,12 @@ def get_user_role(user_id: str):
 @router.get("/currency-rates")
 def get_currency_rates():
     """환율 정보 조회 (fn8 래핑)"""
-    response = supabase.table("currency_rates").select("*").execute()
-    return response.data
+    try:
+        rate = get_exchange_rate()
+        timing = evaluate_purchase_timing()
+        return {
+            "exchange_rate": rate,
+            "purchase_timing": timing
+        }
+    except Exception as e:
+        return {"error": str(e)}

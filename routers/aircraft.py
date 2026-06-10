@@ -7,6 +7,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
 from routers.errors import aircraft_not_found, invalid_input, db_error
 
+# fn 연동
+from functions.csc01.fn1_get_aircraft_info import get_aircraft_info
+from functions.csc01.fn3_update_flight_hours import update_flight_hours as fn3_update_flight_hours
+
 router = APIRouter(prefix="/aircraft", tags=["CSC-01 항공기 관리"])
 
 
@@ -42,11 +46,11 @@ def get_aircraft():
 
 @router.get("/{aircraft_id}")
 def get_aircraft_by_id(aircraft_id: int):
-    """특정 기체 정보 조회"""
-    response = supabase.table("aircraft").select("*").eq("id", aircraft_id).execute()
-    if not response.data:
+    """특정 기체 정보 조회 (fn1 래핑)"""
+    try:
+        return get_aircraft_info(aircraft_id)
+    except LookupError:
         aircraft_not_found(aircraft_id)
-    return response.data[0]
 
 @router.post("")
 def create_aircraft(data: AircraftCreate):

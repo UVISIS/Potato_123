@@ -6,6 +6,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
 from routers.errors import inventory_not_found, insufficient_stock, db_error
+# fn 연동
+from functions.csc02.fn5_record_transaction import record_transaction
 
 router = APIRouter(prefix="/transactions", tags=["CSC-02 입출고 관리"])
 
@@ -33,54 +35,25 @@ class TransactionCreate(BaseModel):
 
 @router.post("")
 def create_transaction(data: TransactionCreate):
-    """입고/출고 등록 (팝업C/D)"""
-    # 1. 재고 현황 조회
-    inventory = supabase.table("parts_inventory")\
-        .select("quantity_on_hand")\
-        .eq("part_id", data.part_id).execute()
-
-    if not inventory.data:
-        inventory_not_found(data.part_id)
-
-    current_qty = inventory.data[0]["quantity_on_hand"]
-
-    # 2. 출고 시 재고 부족 체크
-    if data.transaction_type == "출고":
-        if current_qty < data.quantity:
-            insufficient_stock(data.part_id, current_qty, data.quantity)
-
-    # 3. 거래 기록 INSERT
-    record = data.dict(exclude_none=True)
-    response = supabase.table("parts_transactions").insert(record).execute()
-    transaction_id = response.data[0]["id"]
-
-    # 4. 재고 수량 자동 갱신
-    if data.transaction_type == "입고":
-        new_qty = current_qty + data.quantity
-    else:
-        new_qty = current_qty - data.quantity
-
-    supabase.table("parts_inventory")\
-        .update({"quantity_on_hand": new_qty})\
-        .eq("part_id", data.part_id).execute()
-
-    # 5. 출고 후 안전재고 미달 경고
-    warning = None
-    if data.transaction_type == "출고":
-        reorder = supabase.table("reorder_points")\
-            .select("safety_stock")\
-            .eq("part_id", data.part_id).execute()
-        if reorder.data:
-            safety_stock = reorder.data[0]["safety_stock"]
-            if new_qty <= safety_stock:
-                warning = f"⚠️ 안전재고 미달! 발주가 필요합니다 (현재: {new_qty}개, 안전재고: {safety_stock}개)"
-
-    return {
-        "message": f"{data.transaction_type} 처리 완료",
-        "transaction_id": transaction_id,
-        "remaining_qty": new_qty,
-        "warning": warning
-    }
+    """입고/출고 등록 (fn5 래핑)"""
+    try:
+        return record_transaction(
+            part_id=data.part_id,
+            transaction_type=data.transaction_type,
+            quantity=data.quantity,
+            location=data.location,
+            aircraft_id=data.aircraft_id,
+            handled_by=data.handled_by,
+            notes=data.notes,
+            unit_price_eur=data.unit_price_eur,
+            exchange_rate_applied=data.exchange_rate_applied,
+            maintenance_type=data.maintenance_type,
+            maintenance_history_id=data.maintenance_history_id
+        )
+    except ValueError as e:
+        insufficient_stock(data.part_id, 0, data.quantity)
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("")
 def get_transactions(
