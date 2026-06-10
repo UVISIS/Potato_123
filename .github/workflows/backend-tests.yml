@@ -1,0 +1,37 @@
+name: backend-tests
+
+# functions/ 또는 tests/ 가 바뀌어 push/PR 되면 자동으로 단위 테스트 실행
+on:
+  push:
+    paths:
+      - 'functions/**'
+      - 'tests/**'
+      - 'requirements.txt'
+  pull_request:
+    paths:
+      - 'functions/**'
+      - 'tests/**'
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 단위 테스트는 Mock 클라이언트 사용 → 실제 Supabase 키 불필요.
+      # (통합 테스트를 CI에 넣을 경우에만 아래 env 를 GitHub Secrets 로 주입)
+      # env:
+      #   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      #   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Run pytest
+        run: pytest -q
