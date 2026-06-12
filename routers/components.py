@@ -9,6 +9,7 @@ from routers.errors import component_not_found, inventory_not_found, reorder_not
 # fn 연동
 from functions.csc02.fn4_get_inventory import get_inventory as fn4_get_inventory
 from functions.csc03.fn7_analyze_safety_stock import analyze_safety_stock
+from functions.csc02.fn13_get_maintenance_bom import get_maintenance_bom
 
 router = APIRouter(tags=["CSC-02 부품/자재 관리"])
 
@@ -177,3 +178,22 @@ def update_reorder_point(part_id: int, data: ReorderPointUpdate):
     if not response.data:
         reorder_not_found(part_id)
     return response.data[0]
+
+# ── BOM 조회 (fn13 래핑) ──────────────────────
+
+@router.get("/bom/{maintenance_type}")
+def get_bom(maintenance_type: str, aircraft_model: Optional[str] = None):
+    """정비 유형별 BOM 및 예상 비용 조회 (fn13 래핑)
+
+    - maintenance_type 예시: '100hr', '200hr', 'Annual'
+    - aircraft_model 예시: 'DA40NG', 'DA42NG' (미입력 시 전 기종)
+    """
+    try:
+        return get_maintenance_bom(
+            maintenance_type=maintenance_type,
+            aircraft_model=aircraft_model,
+        )
+    except ValueError as e:
+        return {"error": str(e)}, 422
+    except Exception as e:
+        return {"error": str(e)}, 500
