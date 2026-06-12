@@ -143,7 +143,10 @@ def get_component_status(
 
         # TBO 정의된 경우 → 계산
         if install_hours is None:
-            # install_hours가 NULL이면 잔여시간 계산 불가
+            # install_hours가 NULL이면 잔여시간 계산 불가 → unknown
+            if not include_unknown:
+                continue
+
             result.append({
                 "component_id": component_id,
                 "component_name": component_name,

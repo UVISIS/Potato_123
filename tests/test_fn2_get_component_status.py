@@ -34,7 +34,7 @@ def _seed(db):
         # HL1254 부품들
         # --- (1) 정상 상태 (serviceable)
         # Austro AE300 엔진: install_hours=800, tbo=1800
-        # remaining = (800 + 1800) - 1200 = 400h → serviceable
+        # remaining = (800 + 1800) - 1200 = 1400h → serviceable
         {
             "id": 101,
             "aircraft_id": 1,
@@ -107,7 +107,7 @@ def _seed(db):
             "component_name": "Air Filter",
             "component_type": "air_filter",
             "installed_date": "2020-01-01",
-            "install_hours": 1000,
+            "install_hours": 600,
             "status": "serviceable",
         },
         # --- (5) TBO 미정의 부품
@@ -161,11 +161,11 @@ def test_serviceable_status(db):
     result = get_component_status(1)
     
     # HL1254: Austro AE300 Engine (install=800, tbo=1800, total=1200)
-    # remaining = (800 + 1800) - 1200 = 400h → serviceable
+    # remaining = (800 + 1800) - 1200 = 1400h → serviceable
     engine = next((c for c in result if c["component_id"] == 101), None)
     assert engine is not None
     assert engine["status"] == "serviceable"
-    assert engine["remaining_tbo"] == 400.0
+    assert engine["remaining_tbo"] == 1400.0
     assert engine["tbo_hours"] == 1800
 
 
@@ -200,7 +200,7 @@ def test_overdue_status(db):
     _seed(db)
     result = get_component_status(1)
     
-    # HL1254: Air Filter (install=1000, tbo=100, total=1200)
+    # HL1254: Air Filter (install=600, tbo=500(MAP), total=1200)
     # remaining = (1000 + 100) - 1200 = -100h → overdue
     air_filter = next((c for c in result if c["component_id"] == 104), None)
     assert air_filter is not None
@@ -289,7 +289,7 @@ def test_multiple_aircraft(db):
     
     # AC2: 1개 부품
     assert len(result_ac2) == 1
-    assert result_ac2[0]["aircraft_id"] == 2  # 실제로는 이 필드가 없지만, 로직 확인 차원
+    assert result_ac2[0]["component_name"] == "Engine HL2046"  # AC2 부품만 반환되는지 확인
 
 
 def test_total_flight_hours_zero(db):

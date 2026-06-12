@@ -14,11 +14,14 @@ def get_inventory(
     """
     부품 재고 현황을 조회한다.
 
+    적용 기체 판정은 component_aircraft 매핑 테이블 기준:
+        · 매핑 행이 없는 부품  → 전 기체 공용 (항상 포함)
+        · 매핑 행이 있는 부품  → 매핑된 기체에서만 포함
+
     Parameters
     ----------
     aircraft_id : int | None
-        특정 기체 전용 부품 + 공통 부품(aircraft_id NULL)만 조회.
-        None 이면 전체 부품.
+        특정 기체에 적용되는 부품(전용 + 공용)만 조회. None 이면 전체 부품.
     location : str
         "청주" | "무안" → 해당 기지 재고. "all"(기본) → 양 기지 합산.
     category : str | None
@@ -54,26 +57,44 @@ def get_inventory(
 
     client = get_client()
 
-    # ── components 조회 (category 는 DB-side, aircraft_id 는 Python-side 필터)
+    # ── components 조회 (category 는 DB-side 필터)
     comp_q = client.table("components").select(
-        "id, part_number, nomenclature, category, aircraft_id"
+        "id, part_number, nomenclature, category"
     )
     if category is not None:
         comp_q = comp_q.eq("category", category)
     comps = comp_q.execute()
     comp_rows = comps.data or []
 
-    # aircraft_id 지정 시: 해당 기체 전용 + 공통(aircraft_id NULL)
-    if aircraft_id is not None:
-        comp_rows = [
-            c for c in comp_rows
-            if c.get("aircraft_id") == aircraft_id or c.get("aircraft_id") is None
-        ]
-
     if not comp_rows:
         return []
 
     part_ids = [c["id"] for c in comp_rows]
+
+    # ── component_aircraft 매핑 조회 → component_id 별 적용 기체 집합
+    map_rows = (
+        client.table("component_aircraft")
+        .select("component_id, aircraft_id")
+        .in_("component_id", part_ids)
+        .execute()
+        .data
+    ) or []
+    applicability: dict[int, set[int]] = {}
+    for m in map_rows:
+        cid, aid = m.get("component_id"), m.get("aircraft_id")
+        if cid is not None and aid is not None:
+            applicability.setdefault(cid, set()).add(aid)
+
+    # aircraft_id 지정 시: 공용(매핑 없음) + 해당 기체 매핑 부품만
+    if aircraft_id is not None:
+        comp_rows = [
+            c for c in comp_rows
+            if c["id"] not in applicability            # 공용
+            or aircraft_id in applicability[c["id"]]   # 해당 기체 전용
+        ]
+        if not comp_rows:
+            return []
+        part_ids = [c["id"] for c in comp_rows]
 
     # ── parts_inventory 조회 (part_id IN, location 필터)
     inv_q = client.table("parts_inventory").select(
@@ -138,6 +159,12 @@ def get_inventory(
 # =============================================================================
 # 변경 이력 (Change Log)
 # =============================================================================
+# v1.1  2026-06-12  6월2주차 — 공용 부품 처리 방식 변경 (팀 확정)
+#       · components.aircraft_id 단일 컬럼 → component_aircraft 매핑 테이블(N:M) 전환
+#       · 매핑 행 없음 = 전 기체 공용 / 매핑 행 있음 = 해당 기체 전용
+#       · 한 부품이 복수 기체(예: DA-40 + DA-42)에 적용되는 케이스 표현 가능
+#       · components 조회에서 aircraft_id 컬럼 의존 제거 (컬럼 폐기 예정)
+#
 # v1.0  2026-06-10  6월2주차 — 신규 작성
 #       · P2 해제(components.aircraft_id NULL 허용) 반영 — 공통 부품 단일 레코드 처리
 #       · aircraft_id 지정 시 전용 부품 + 공통 부품 함께 조회 (Python-side 필터)
