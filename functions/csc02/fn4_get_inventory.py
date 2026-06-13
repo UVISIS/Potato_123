@@ -1,8 +1,9 @@
 from __future__ import annotations
 from functions.db import get_client
+from functions.constants import STOCK_WARNING_RATIO as WARNING_RATIO
 
 
-WARNING_RATIO = 1.5   # safety_stock × 1.5 이하 → 경고 (fn7 과 동일 기준)
+# WARNING_RATIO = 1.5  → functions.constants 로 통합
 _VALID_LOC = {"청주", "무안", "all"}
 
 

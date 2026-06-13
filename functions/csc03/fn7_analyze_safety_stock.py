@@ -1,8 +1,9 @@
 from __future__ import annotations
 from functions.db import get_client
+from functions.constants import STOCK_WARNING_RATIO as WARNING_RATIO
 
 
-WARNING_RATIO = 1.5   # safety_stock × 1.5 이하 → 경고
+# WARNING_RATIO = 1.5  → functions.constants 로 통합
 
 
 def analyze_safety_stock(

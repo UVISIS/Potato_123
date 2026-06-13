@@ -1,5 +1,10 @@
 from __future__ import annotations
 from datetime import datetime, timezone, date
+from functions.constants import (
+    MAINTENANCE_CRITICAL_HOURS,
+    MAINTENANCE_WARNING_HOURS,
+    STOCK_WARNING_RATIO,
+)
 
 
 def refresh_dashboard_metrics(force: bool = False) -> dict:
@@ -99,9 +104,9 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
             hr = float(hr)
             if hr < 0:
                 overdue += 1
-            elif hr <= 10.0:
+            elif hr <= MAINTENANCE_CRITICAL_HOURS:
                 critical += 1
-            elif hr <= 30.0:
+            elif hr <= MAINTENANCE_WARNING_HOURS:
                 warning += 1
 
         metrics["maintenance_overdue"]  = float(overdue)
@@ -152,7 +157,7 @@ def refresh_dashboard_metrics(force: bool = False) -> dict:
             ss = safety_map.get(pid, 0)
             if qty <= ss:
                 shortage += 1
-            elif qty <= ss * 1.5:
+            elif qty <= ss * STOCK_WARNING_RATIO:
                 warning_stock += 1
 
         metrics["stock_shortage"] = float(shortage)

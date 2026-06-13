@@ -2,10 +2,14 @@ from __future__ import annotations
 from datetime import datetime, timezone, timedelta, date
 
 from functions.db import get_client
+from functions.constants import (
+    DEFAULT_DAILY_FLIGHT_HOURS as DEFAULT_DAILY,
+    MAINTENANCE_CRITICAL_PCT as CRITICAL_PCT,
+)
 
 
-CRITICAL_PCT  = 0.10   # 잔여 비율 ≤ 10% → 임박
-DEFAULT_DAILY = 3.0    # 비행 이력 없을 때 기본 일평균 비행시간 (h)
+# CRITICAL_PCT  = 0.10  → functions.constants.MAINTENANCE_CRITICAL_PCT 로 통합
+# DEFAULT_DAILY = 3.0  → functions.constants.DEFAULT_DAILY_FLIGHT_HOURS 로 통합 (구:3.0 → 2.192)
 
 
 def calc_d_time(

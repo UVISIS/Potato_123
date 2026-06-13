@@ -1,14 +1,20 @@
 from __future__ import annotations
 from functions.db import get_client
+from functions.constants import (
+    ALARM_CRITICAL_HOURS as CRITICAL_HOURS,
+    ALARM_WARNING_HOURS  as WARNING_HOURS,
+    ALARM_WARNING_DAYS   as WARNING_DAYS,
+    ALARM_INFO_DAYS      as INFO_DAYS,
+)
 
 
 # 시간 기반 임계값 (잔여 비행시간, h)
-CRITICAL_HOURS = 0      # ≤ 0h  → 초과
-WARNING_HOURS  = 10     # ≤ 10h → 임박
+# CRITICAL_HOURS = 0   → functions.constants 로 통합
+# WARNING_HOURS  = 10  → functions.constants 로 통합
 INFO_HOURS     = 25     # ≤ 25h → 예정
 # 날짜 기반 임계값 (잔여 일수, day) — hours_remaining 이 None 일 때 사용
-WARNING_DAYS   = 7
-INFO_DAYS      = 30
+# WARNING_DAYS   = 7   → functions.constants 로 통합
+# INFO_DAYS      = 30  → functions.constants 로 통합
 
 
 def generate_maintenance_alarms(

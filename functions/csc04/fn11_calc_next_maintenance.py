@@ -1,9 +1,13 @@
 from __future__ import annotations
 from functions.db import get_client
+from functions.constants import (
+    MAINTENANCE_CRITICAL_HOURS as CRITICAL_HOURS,
+    MAINTENANCE_WARNING_HOURS  as WARNING_HOURS,
+)
 
 
-CRITICAL_HOURS = 10.0   # 잔여시간 ≤ 10h → 임박
-WARNING_HOURS  = 30.0   # 잔여시간 ≤ 30h → 주의
+# CRITICAL_HOURS = 10.0  → functions.constants 로 통합
+# WARNING_HOURS  = 30.0  → functions.constants 로 통합
 
 # maintenance_schedule.status 허용값
 ACTIVE_STATUSES = ("scheduled", "overdue")

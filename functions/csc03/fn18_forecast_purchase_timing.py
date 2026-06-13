@@ -10,7 +10,7 @@ CSC-03/04  |  fn18: forecast_purchase_timing()
 기준 (2026-06-13 피드백 반영):
     · 실제 비행시간 기준 계산 (청주/무안 공통, aircraft.total_flight_hours 사용)
     · 하루 최대 비행 6~7h, 연간 총비행 약 700~750h(안전 고려)
-      → 기본 연간 725h. 캘린더 환산: 시간/일 = 연간비행 / 365
+      → 기본 연간 800h(청주주4일/무안주7일). 캘린더 환산: 시간/일 = 연간비행 / 365
         (운항일에만 비행하므로 '하루 최대'가 아닌 '연간 총량 분산'으로 환산)
     · 정비 도래시점(due_hours) - 현재 누적시간 = 잔여 비행시간
       → 잔여시간 / (연간/365) = 도래까지 캘린더 일수
@@ -27,17 +27,18 @@ from datetime import date, timedelta
 import math
 
 # ── 비행시간 가정 기본값 (피드백 기준) ─────────────────────────
-DEFAULT_ANNUAL_FLIGHT_HOURS = 725.0   # 연간 총비행시간 (700~750 중앙값, 안전 고려)
-DEFAULT_DAILY_MAX_HOURS     = 6.5     # 하루 최대 비행시간 (6~7, 참고용 상한)
+# ANNUAL_FLIGHT_HOURS = 725.0  → functions.constants.ANNUAL_FLIGHT_HOURS (800h) 로 통합
+# DEFAULT_DAILY_MAX_HOURS     = 6.5   → functions.constants 참고
 DEFAULT_HORIZON_DAYS        = 365     # 예측 기간(기본 1년)
 DEFAULT_LEAD_TIME_DAYS      = 30      # 리드타임 기본값(reorder_points 미설정 시)
 
 from functions.db import get_client
+from functions.constants import ANNUAL_FLIGHT_HOURS, DAILY_AVG_FLIGHT_HOURS
 
 
 def forecast_purchase_timing(
     aircraft_id: int,
-    annual_flight_hours: float = DEFAULT_ANNUAL_FLIGHT_HOURS,
+    annual_flight_hours: float = ANNUAL_FLIGHT_HOURS,
     horizon_days: int = DEFAULT_HORIZON_DAYS,
     default_lead_time_days: int = DEFAULT_LEAD_TIME_DAYS,
     today: str | None = None,
@@ -50,7 +51,7 @@ def forecast_purchase_timing(
     aircraft_id : int
         aircraft.id (PK)
     annual_flight_hours : float
-        연간 총비행시간 가정(기본 725). 0 초과.
+        연간 총비행시간 가정(기본 800h — constants.ANNUAL_FLIGHT_HOURS). 0 초과.
     horizon_days : int
         예측 기간(일). 이 기간 내 도래 정비만 결과에 포함(초과/임박 부품 발주 판단).
     default_lead_time_days : int
@@ -240,7 +241,7 @@ def forecast_purchase_timing(
 # 변경 이력 (Change Log)
 # =============================================================================
 # v1.0  2026-06-13  신규 작성 (피드백 반영)
-#       · 비행시간 → 정비 도래일 캘린더 환산 (연간 725h / 365 기준)
+#       · 비행시간 → 정비 도래일 캘린더 환산 (연간 800h / 365 기준, 청주주4일/무안주7일)
 #       · BOM 소요부품 × 현재고 × 리드타임 결합 → 발주 기준일 산출
 #       · 초과/지금발주/발주예정/여유 4단계 권고
 # 향후 변경 예정
