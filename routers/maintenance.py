@@ -148,7 +148,7 @@ def get_maintenance_history(
     maintenance_type: Optional[str] = None
 ):
     """정비 이력 조회 (기체번호/정비종류 필터)"""
-    query = supabase.table("maintenance_history").select("*")
+    query = supabase.table("maintenance_history").select("*")        .eq("is_deleted", False)
     if aircraft_id:
         query = query.eq("aircraft_id", aircraft_id)
     if maintenance_type:
@@ -334,4 +334,44 @@ def get_maintenance_monthly(aircraft_id: Optional[int] = None, year: Optional[in
         "year": year,
         "monthly_counts": [{"month": m, "count": counts[m]} for m in range(1, 13)],
         "total": sum(counts.values()),
+    }
+
+# ── 정비 이력 Soft Delete ────────────────────────
+
+@router.delete("/history/{history_id}")
+def delete_maintenance_history(history_id: int):
+    """정비 이력 soft delete (is_deleted = true)
+
+    이력 데이터 보존이 핵심이므로 실제 행 삭제 없이 플래그만 변경.
+    연결된 parts_transactions(출고 이력) FK 보존.
+    복구: PATCH /maintenance/history/{id}/restore
+
+    ⚠️ DB 선행 작업 필요:
+      ALTER TABLE maintenance_history ADD COLUMN IF NOT EXISTS
+        is_deleted boolean NOT NULL DEFAULT false;
+      CREATE INDEX ON maintenance_history (is_deleted);
+    → docs/DB_REQUEST.md 참고
+    """
+    res = supabase.table("maintenance_history")\
+        .update({"is_deleted": True})\
+        .eq("id", history_id).execute()
+    if not res.data:
+        maintenance_not_found(history_id)
+    return {
+        "message": f"정비 이력 {history_id}가 삭제 처리되었습니다. (is_deleted=true)",
+        "history_id": history_id,
+    }
+
+
+@router.patch("/history/{history_id}/restore")
+def restore_maintenance_history(history_id: int):
+    """정비 이력 soft delete 복구 (is_deleted = false)"""
+    res = supabase.table("maintenance_history")\
+        .update({"is_deleted": False})\
+        .eq("id", history_id).execute()
+    if not res.data:
+        maintenance_not_found(history_id)
+    return {
+        "message": f"정비 이력 {history_id}가 복구되었습니다. (is_deleted=false)",
+        "history_id": history_id,
     }

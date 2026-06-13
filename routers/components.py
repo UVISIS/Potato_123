@@ -75,15 +75,21 @@ def get_components(
     aircraft_id: Optional[int] = None,
     category: Optional[str] = None,
     q: Optional[str] = None,
+    include_deleted: bool = False,
 ):
-    """전체 부품 목록 조회 (q: 부품번호/명칭 검색)"""
+    """전체 부품 목록 조회 (q: 부품번호/명칭 검색)
+
+    include_deleted=false(기본) → is_deleted=true 행 제외.
+    ⚠️ DB: components.is_deleted 컬럼 추가 후 정상 필터 동작.
+    """
     query = supabase.table("components").select("*")
+    if not include_deleted:
+        query = query.eq("is_deleted", False)
     if aircraft_id:
         query = query.eq("aircraft_id", aircraft_id)
     if category:
         query = query.eq("category", category)
     if q:
-        # 부품번호 또는 명칭 부분일치 검색
         query = query.or_(f"part_number.ilike.%{q}%,nomenclature.ilike.%{q}%")
     return query.execute().data
 
@@ -294,4 +300,45 @@ def get_component_last_price(component_id: int):
         "nomenclature": comp[0].get("nomenclature"),
         "last_unit_price_eur": price,
         "source": source,
+    }
+
+
+# ── 부품 Soft Delete ──────────────────────────────
+
+@router.delete("/components/{component_id}")
+def delete_component(component_id: int):
+    """부품 soft delete (is_deleted = true)
+
+    실제 행 삭제 없이 is_deleted 플래그만 변경.
+    parts_inventory·bom·reorder_points·parts_transactions FK 보존.
+    복구: PATCH /components/{id} 로 직접 DB 수정(또는 별도 복구 API).
+
+    ⚠️ DB 선행 작업 필요:
+      ALTER TABLE components ADD COLUMN IF NOT EXISTS
+        is_deleted boolean NOT NULL DEFAULT false;
+      CREATE INDEX ON components (is_deleted);
+    → docs/DB_REQUEST.md 참고
+    """
+    res = supabase.table("components")\
+        .update({"is_deleted": True})\
+        .eq("id", component_id).execute()
+    if not res.data:
+        component_not_found(component_id)
+    return {
+        "message": f"부품 {component_id}가 삭제 처리되었습니다. (is_deleted=true)",
+        "component_id": component_id,
+    }
+
+
+@router.patch("/components/{component_id}/restore")
+def restore_component(component_id: int):
+    """부품 soft delete 복구 (is_deleted = false)"""
+    res = supabase.table("components")\
+        .update({"is_deleted": False})\
+        .eq("id", component_id).execute()
+    if not res.data:
+        component_not_found(component_id)
+    return {
+        "message": f"부품 {component_id}가 복구되었습니다. (is_deleted=false)",
+        "component_id": component_id,
     }

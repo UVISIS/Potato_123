@@ -101,11 +101,18 @@ def update_aircraft(aircraft_id: int, data: AircraftCreate):
 
 @router.delete("/{aircraft_id}")
 def delete_aircraft(aircraft_id: int):
-    """기체 삭제"""
-    response = supabase.table("aircraft").delete().eq("id", aircraft_id).execute()
-    if not response.data:
+    """기체 soft delete (status='retired')
+
+    실제 행 삭제 대신 status를 'retired'로 변경한다.
+    연결된 정비 스케줄·비행 이력은 그대로 보존된다.
+    복구: PUT /aircraft/{id} 로 status='operational' 재설정.
+    ⚠️ DB: aircraft.status 컬럼에 'retired' 허용 확인 필요.
+    """
+    res = supabase.table("aircraft").update({"status": "retired"})\
+        .eq("id", aircraft_id).execute()
+    if not res.data:
         aircraft_not_found(aircraft_id)
-    return {"message": "기체가 삭제되었습니다"}
+    return {"message": f"기체 {aircraft_id}가 retired 처리되었습니다.", "aircraft_id": aircraft_id}
 
 
 # ── 비행시간 관리 ──────────────────────────────
