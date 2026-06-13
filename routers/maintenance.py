@@ -232,3 +232,106 @@ def create_alert(data: AlertCreate):
         )
     except Exception as e:
         return {"error": str(e)}
+
+
+# ── 주기정비 현황 통합 조회 (Page7) ─────────────
+
+@router.get("/overview/{aircraft_id}")
+def get_maintenance_overview(aircraft_id: int):
+    """주기정비 현황 통합 조회 (schedule + d_time + bom + parts_inventory)
+
+    기체별로 정비 스케줄마다 D-Time(잔여시간/일수)과 BOM 소요부품·현재고를
+    한 번에 묶어 반환한다. (프론트 Page7 — 여러 호출 조합 대체)
+    """
+    ac = supabase.table("aircraft").select("id, registration, model, total_flight_hours")\
+        .eq("id", aircraft_id).execute()
+    if not ac.data:
+        aircraft_not_found(aircraft_id)
+    aircraft = ac.data[0]
+    model = aircraft.get("model")
+
+    scheds = supabase.table("maintenance_schedule").select("*")\
+        .eq("aircraft_id", aircraft_id).execute().data or []
+    dtimes = supabase.table("d_time_counter").select("*")\
+        .eq("aircraft_id", aircraft_id).execute().data or []
+    dtime_by_sched = {d.get("maintenance_schedule_id"): d for d in dtimes}
+
+    items = []
+    for s in scheds:
+        # BOM 부품 (정비종류 + 기종 일치/전기종)
+        bom_rows = supabase.table("bom").select("part_id, required_qty, aircraft_model")\
+            .eq("maintenance_type", s["maintenance_type"]).execute().data or []
+        bom_rows = [b for b in bom_rows if b.get("aircraft_model") in (None, model)]
+
+        parts = []
+        for b in bom_rows:
+            pid = b["part_id"]
+            comp = supabase.table("components").select("nomenclature, part_number")\
+                .eq("id", pid).execute().data
+            inv = supabase.table("parts_inventory").select("quantity_on_hand")\
+                .eq("part_id", pid).execute().data or []
+            stock = sum(int(r.get("quantity_on_hand") or 0) for r in inv)
+            rp = supabase.table("reorder_points").select("safety_stock")\
+                .eq("part_id", pid).execute().data
+            safety = rp[0]["safety_stock"] if rp else None
+            parts.append({
+                "part_id": pid,
+                "part_number": comp[0]["part_number"] if comp else None,
+                "nomenclature": comp[0]["nomenclature"] if comp else None,
+                "required_qty": b.get("required_qty"),
+                "current_stock": stock,
+                "safety_stock": safety,
+            })
+
+        dt = dtime_by_sched.get(s["id"], {})
+        items.append({
+            "maintenance_schedule_id": s["id"],
+            "maintenance_type": s["maintenance_type"],
+            "interval_hours": s.get("interval_hours"),
+            "due_hours": s.get("due_hours"),
+            "due_date": s.get("due_date"),
+            "status": s.get("status"),
+            "hours_remaining": dt.get("hours_remaining"),
+            "days_remaining": dt.get("days_remaining"),
+            "parts": parts,
+        })
+
+    return {
+        "aircraft_id": aircraft_id,
+        "registration": aircraft.get("registration"),
+        "model": model,
+        "total_flight_hours": aircraft.get("total_flight_hours"),
+        "items": items,
+    }
+
+
+# ── 월별 정비 횟수 집계 (Page6 차트) ────────────
+
+@router.get("/history/monthly")
+def get_maintenance_monthly(aircraft_id: Optional[int] = None, year: Optional[int] = None):
+    """월별 정비 횟수 집계 (정비이력 차트용)
+
+    ⚠️ maintenance_history 데이터가 쌓여야 값이 나옴(현재 0행이면 빈 집계).
+    """
+    q = supabase.table("maintenance_history").select("maintenance_date, maintenance_type")
+    if aircraft_id:
+        q = q.eq("aircraft_id", aircraft_id)
+    rows = q.execute().data or []
+
+    counts = {m: 0 for m in range(1, 13)}
+    for r in rows:
+        md = str(r.get("maintenance_date") or "")
+        if len(md) >= 7:
+            yr, mo = md[:4], md[5:7]
+            if year and yr != str(year):
+                continue
+            try:
+                counts[int(mo)] += 1
+            except (ValueError, KeyError):
+                pass
+    return {
+        "aircraft_id": aircraft_id,
+        "year": year,
+        "monthly_counts": [{"month": m, "count": counts[m]} for m in range(1, 13)],
+        "total": sum(counts.values()),
+    }

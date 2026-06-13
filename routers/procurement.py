@@ -9,6 +9,7 @@ from routers.errors import component_not_found, db_error
 from functions.csc03.fn6_calc_order_cost import calc_order_cost
 from functions.csc03.fn17_calc_landed_cost import calc_landed_cost
 from functions.csc03.fn18_forecast_purchase_timing import forecast_purchase_timing
+from functions.csc03.procurement_calendar import next_order_date
 
 router = APIRouter(prefix="/procurement", tags=["CSC-03 발주 관리"])
 
@@ -145,3 +146,11 @@ def forecast_timing(
         return {"error": str(e)}, 422
     except Exception as e:
         return {"error": str(e)}, 500
+
+
+# ── 다음 발주일 (Page4 안전재고) ────────────────
+
+@router.get("/next-order-date")
+def get_next_order_date(today: Optional[str] = None):
+    """다음 발주일 계산 (연 2회 고정: 1월/7월)"""
+    return next_order_date(today)

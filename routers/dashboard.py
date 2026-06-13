@@ -65,6 +65,17 @@ def get_user_role(user_id: str):
         not_found("user_role", 0)
     return response.data[0]
 
+@router.get("/users")
+def list_users(role: Optional[str] = None):
+    """사용자/담당 정비사 목록 조회 (role 필터)
+
+    예) GET /users?role=mechanic → 담당 정비사 목록 (정비 이력 등록 드롭다운용)
+    """
+    query = supabase.table("user_roles").select("*")
+    if role:
+        query = query.eq("role", role)
+    return query.order("id").execute().data
+
 @router.get("/currency-rates")
 def get_currency_rates():
     """환율 정보 조회 (fn8 래핑)"""

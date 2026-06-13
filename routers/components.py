@@ -71,13 +71,20 @@ def create_component(data: ComponentCreate):
     return {"message": "부품이 등록되었습니다", "component_id": component_id}
 
 @router.get("/components")
-def get_components(aircraft_id: Optional[int] = None, category: Optional[str] = None):
-    """전체 부품 목록 조회"""
+def get_components(
+    aircraft_id: Optional[int] = None,
+    category: Optional[str] = None,
+    q: Optional[str] = None,
+):
+    """전체 부품 목록 조회 (q: 부품번호/명칭 검색)"""
     query = supabase.table("components").select("*")
     if aircraft_id:
         query = query.eq("aircraft_id", aircraft_id)
     if category:
         query = query.eq("category", category)
+    if q:
+        # 부품번호 또는 명칭 부분일치 검색
+        query = query.or_(f"part_number.ilike.%{q}%,nomenclature.ilike.%{q}%")
     return query.execute().data
 
 @router.get("/components/{component_id}")
@@ -256,3 +263,35 @@ def analyze_all_safety_stock(location: str = "all"):
         "정상": sum(1 for r in results if r.get("status") == "정상"),
     }
     return {"summary": summary, "items": results, "errors": errors or None}
+
+
+# ── 전 분기 단가(EUR) 조회 (Page4 안전재고) ──────
+
+@router.get("/components/{component_id}/last-price")
+def get_component_last_price(component_id: int):
+    """부품 직전 단가(EUR) 조회
+
+    1순위: parts_transactions 의 최근 입고 단가(unit_price_eur)
+    2순위: components.unit_price_eur (등록 기준 단가)
+    """
+    comp = supabase.table("components").select("unit_price_eur, nomenclature")\
+        .eq("id", component_id).execute().data
+    if not comp:
+        component_not_found(component_id)
+
+    tx = supabase.table("parts_transactions")\
+        .select("unit_price_eur, transaction_date")\
+        .eq("part_id", component_id)\
+        .eq("transaction_type", "입고")\
+        .order("transaction_date", desc=True).limit(1).execute().data
+
+    tx_price = tx[0]["unit_price_eur"] if tx and tx[0].get("unit_price_eur") is not None else None
+    source = "parts_transactions" if tx_price is not None else "components"
+    price = tx_price if tx_price is not None else comp[0].get("unit_price_eur")
+
+    return {
+        "component_id": component_id,
+        "nomenclature": comp[0].get("nomenclature"),
+        "last_unit_price_eur": price,
+        "source": source,
+    }
