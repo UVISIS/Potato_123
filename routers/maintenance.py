@@ -11,6 +11,7 @@ from functions.csc04.fn11_calc_next_maintenance import calc_next_maintenance
 from functions.csc04.fn12_calc_d_time import calc_d_time
 from functions.csc04.fn9_fn10_parts_check import get_required_parts, check_parts_availability as fn10_check
 from functions.csc04.fn14_generate_maintenance_alarms import generate_maintenance_alarms
+from functions.csc02.fn5_record_transaction import record_transaction
 
 
 router = APIRouter(prefix="/maintenance", tags=["CSC-04 주기정비 관리"])
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/maintenance", tags=["CSC-04 주기정비 관리"])
 class MaintenancePart(BaseModel):
     part_id: int
     quantity: int
+    destination: Optional[str] = None    # 부품별 목적지 override (보통 정비 레벨 destination 사용)
 
 class MaintenanceHistoryCreate(BaseModel):
     aircraft_id: int
@@ -29,6 +31,7 @@ class MaintenanceHistoryCreate(BaseModel):
     hours_at_maintenance: float         # 정비 당시 누적 비행시간
     next_due_date: Optional[str] = None
     handled_by: str                     # 담당 정비사
+    destination: Optional[str] = None   # 정비 수행/부품 출고 목적지 비행교육원 (청주/무안)
     parts_used: Optional[List[MaintenancePart]] = []  # 교체 부품 목록
     notes: Optional[str] = None
 
@@ -51,7 +54,15 @@ class AlertCreate(BaseModel):
 
 @router.post("/history")
 def create_maintenance_history(data: MaintenanceHistoryCreate):
-    """정비 이력 등록 (팝업F) - 정비 기록 + 부품 출고 자동 처리"""
+    """정비 이력 등록 (팝업F) - 정비 기록 + 부품 출고 자동 처리
+
+    후처리 체인:
+      1. maintenance_history INSERT
+      2. fn5(record_transaction) — 교체부품 출고: parts_transactions +
+         parts_inventory 차감 + inventory_history 기록 (원자적, 재고초과 검증)
+      3. maintenance_schedule status='completed' 갱신
+      4. fn12(calc_d_time) — 해당 기체 정비 스케줄 D-Time 카운터 재계산
+    """
     # 1. maintenance_history INSERT
     history_data = {
         "aircraft_id": data.aircraft_id,
@@ -65,57 +76,69 @@ def create_maintenance_history(data: MaintenanceHistoryCreate):
     history = supabase.table("maintenance_history").insert(history_data).execute()
     history_id = history.data[0]["id"]
 
-    # 2. d_time_counter 갱신
-    supabase.table("d_time_counter")\
-        .update({
-            "current_hours": data.hours_at_maintenance,
-            "last_updated": "now()"
-        })\
-        .eq("aircraft_id", data.aircraft_id).execute()
+    # 2. 교체 부품 출고 자동 처리 — fn5 래핑 (parts_transactions + inventory + 이력)
+    parts_warning = []
+    parts_issued = []
+    for part in data.parts_used:
+        try:
+            tx = record_transaction(
+                part_id=part.part_id,
+                transaction_type="출고",
+                quantity=part.quantity,
+                destination=(part.destination or data.destination),
+                aircraft_id=data.aircraft_id,
+                handled_by=data.handled_by,
+                maintenance_type=data.maintenance_type,
+                maintenance_history_id=history_id,
+                notes=f"정비 출고 (history_id={history_id})",
+            )
+            parts_issued.append({
+                "part_id": part.part_id,
+                "quantity": part.quantity,
+                "quantity_after": tx["quantity_after"],
+                "transaction_id": tx["transaction_id"],
+            })
+            # 안전재고 미달 체크
+            reorder = supabase.table("reorder_points")\
+                .select("safety_stock")\
+                .eq("part_id", part.part_id).execute()
+            if reorder.data and reorder.data[0]["safety_stock"] is not None \
+                    and tx["quantity_after"] <= reorder.data[0]["safety_stock"]:
+                parts_warning.append(
+                    f"부품 ID {part.part_id}: 안전재고 미달 (잔여: {tx['quantity_after']}개)"
+                )
+        except ValueError as e:
+            # 재고 부족/부품 미존재 등 — 해당 부품만 스킵하고 경고 누적
+            parts_warning.append(f"부품 ID {part.part_id} 출고 실패: {e}")
 
-    # 3. maintenance_schedule 다음 주기 업데이트
+    # 3. maintenance_schedule 완료 처리
     supabase.table("maintenance_schedule")\
         .update({"status": "completed"})\
         .eq("aircraft_id", data.aircraft_id)\
         .eq("maintenance_type", data.maintenance_type).execute()
 
-    # 4. 교체 부품 출고 자동 처리
-    parts_warning = []
-    for part in data.parts_used:
-        # parts_transactions INSERT (출고)
-        supabase.table("parts_transactions").insert({
-            "part_id": part.part_id,
-            "transaction_type": "출고",
-            "quantity": part.quantity,
-            "transaction_date": data.maintenance_date,
-            "aircraft_id": data.aircraft_id,
-            "maintenance_type": data.maintenance_type,
-            "handled_by": data.handled_by,
-            "maintenance_history_id": history_id
-        }).execute()
-
-        # parts_inventory 차감
-        inventory = supabase.table("parts_inventory")\
-            .select("quantity_on_hand")\
-            .eq("part_id", part.part_id).execute()
-
-        if inventory.data:
-            current_qty = inventory.data[0]["quantity_on_hand"]
-            new_qty = current_qty - part.quantity
-            supabase.table("parts_inventory")\
-                .update({"quantity_on_hand": new_qty})\
-                .eq("part_id", part.part_id).execute()
-
-            # 안전재고 미달 체크
-            reorder = supabase.table("reorder_points")\
-                .select("safety_stock")\
-                .eq("part_id", part.part_id).execute()
-            if reorder.data and new_qty <= reorder.data[0]["safety_stock"]:
-                parts_warning.append(f"부품 ID {part.part_id}: 안전재고 미달 (잔여: {new_qty}개)")
+    # 4. D-Time 카운터 재계산 — fn12 (해당 기체+정비종류 스케줄 대상)
+    d_time_updated = []
+    scheds = supabase.table("maintenance_schedule")\
+        .select("id")\
+        .eq("aircraft_id", data.aircraft_id)\
+        .eq("maintenance_type", data.maintenance_type).execute()
+    for sched in (scheds.data or []):
+        try:
+            calc_d_time(
+                aircraft_id=data.aircraft_id,
+                maintenance_schedule_id=sched["id"],
+                current_flight_hours=data.hours_at_maintenance,
+            )
+            d_time_updated.append(sched["id"])
+        except Exception as e:
+            parts_warning.append(f"D-Time 재계산 실패 (schedule_id={sched['id']}): {e}")
 
     return {
         "message": "정비 이력이 등록되었습니다",
         "history_id": history_id,
+        "parts_issued": parts_issued,
+        "d_time_updated": d_time_updated,
         "warnings": parts_warning if parts_warning else None
     }
 

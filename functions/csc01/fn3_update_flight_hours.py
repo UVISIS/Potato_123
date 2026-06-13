@@ -82,12 +82,12 @@ def update_flight_hours(
     if not ac.data:
         raise ValueError(f"aircraft_id {aircraft_id} 에 해당하는 항공기가 없습니다.")
 
-    current_total: int = ac.data["total_flight_hours"]
+    current_total: float = float(ac.data["total_flight_hours"] or 0)
 
     # ── 누적 계산
-    # ⚠️ P3 타입변경(integer→numeric) 후 new_aircraft_int = round() 제거 예정
-    new_accumulated  = round(current_total + flight_hours_val, 1)
-    new_aircraft_int = round(new_accumulated)   # integer 타입 맞춤
+    # P3 타입변경(integer→numeric) 반영: round() 제거, 소수점 그대로 저장
+    # (2026-06-13 라이브 DB 확인 — aircraft.total_flight_hours = numeric)
+    new_accumulated = round(current_total + flight_hours_val, 1)
 
     # ── flight_hours INSERT
     payload: dict = {
@@ -114,7 +114,7 @@ def update_flight_hours(
     # INSERT 후 여기서 실패 시 flight_hours 행이 이미 커밋됨 — log_id로 수동 복구
     try:
         client.table("aircraft").update({
-            "total_flight_hours": new_aircraft_int,
+            "total_flight_hours": new_accumulated,
             "updated_at":         datetime.now(timezone.utc).isoformat(),
         }).eq("id", aircraft_id).execute()
     except Exception as e:
@@ -126,7 +126,7 @@ def update_flight_hours(
     return {
         "log_id":                  log_id,
         "total_accumulated_hours": new_accumulated,   # float
-        "aircraft_total":          new_aircraft_int,  # int
+        "aircraft_total":          new_accumulated,   # float (P3: numeric 저장값과 동일)
     }
 
 

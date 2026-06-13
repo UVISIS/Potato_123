@@ -10,10 +10,10 @@ def test_contract_and_accumulate(db):
     r = update_flight_hours(1, "2026-06-01", 2.5, pilot_name="kim")
     assert set(r) == FN3_KEYS
     assert r["total_accumulated_hours"] == 1002.5     # float 보존
-    assert r["aircraft_total"] == 1002                # int 반올림(은행가: 1002.5→1002)
+    assert r["aircraft_total"] == 1002.5              # P3: numeric 소수점 보존
     # 부수효과: flight_hours 1행 적재 + aircraft 누적 갱신
     assert len(db.rows("flight_hours")) == 1
-    assert db.rows("aircraft")[0]["total_flight_hours"] == 1002
+    assert db.rows("aircraft")[0]["total_flight_hours"] == 1002.5
 
 
 def test_future_date_rejected(db):

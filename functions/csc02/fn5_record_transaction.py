@@ -22,6 +22,7 @@ def record_transaction(
     exchange_rate_applied: float | None = None,
     maintenance_type: str | None = None,
     maintenance_history_id: int | None = None,
+    destination: str | None = None,
     allow_negative: bool = False,
 ) -> dict:
     """
@@ -37,10 +38,14 @@ def record_transaction(
     quantity : int
         변동 수량(0 이상). 조정의 경우 목표 수량.
     location : str | None
-        대상 기지/창고("청주"|"무안" 등). None 이면 part_id 의 단일 재고 행 대상.
+        [하위호환 별칭] destination 미지정 시 목적지로 사용. 단일 중앙창고 모델에서는
+        재고 행 선택에 더 이상 사용되지 않는다(중앙 단일행에서 차감).
     aircraft_id, handled_by, notes, reference_number, supplier_id,
     unit_price_eur, exchange_rate_applied, maintenance_type, maintenance_history_id
         parts_transactions 부가 정보(모두 선택).
+    destination : str | None
+        출고 목적지 비행교육원("청주"|"무안"). parts_transactions.location 및
+        inventory_history.location 에 기록된다. (입고/조정은 보통 None)
     allow_negative : bool
         True 이면 출고 시 현재고 초과를 허용(음수 재고 가능). 기본 False(초과 시 ValueError).
 
@@ -90,6 +95,12 @@ def record_transaction(
 
     client = get_client()
 
+    # 단일 중앙창고 모델 (2026-06-13 결정):
+    #   · 재고 차감은 부품당 '중앙창고 단일 행'에서 수행 (location 필터 안 함)
+    #   · destination = 출고 목적지 비행교육원(청주/무안) → parts_transactions.location 에 기록
+    #   · location 파라미터는 destination 의 하위호환 별칭 (destination 미지정 시 사용)
+    dest = destination if destination is not None else location
+
     # ── 부품 존재 확인
     comp = (
         client.table("components")
@@ -101,17 +112,15 @@ def record_transaction(
     if not comp.data:
         raise ValueError(f"part_id {part_id} 에 해당하는 부품이 없습니다.")
 
-    # ── 현재 재고 행 조회 (part_id + location)
-    inv_q = client.table("parts_inventory").select("id, quantity_on_hand, location").eq("part_id", part_id)
-    if location is not None:
-        inv_q = inv_q.eq("location", location)
-    inv = inv_q.execute()
+    # ── 현재 재고 행 조회 (part_id 기준 중앙 단일행 — location 필터 없음)
+    inv = client.table("parts_inventory").select("id, quantity_on_hand, location").eq("part_id", part_id).execute()
     inv_rows = inv.data or []
 
     if len(inv_rows) > 1:
         raise ValueError(
             f"part_id {part_id} 의 재고 행이 {len(inv_rows)}개입니다. "
-            f"location 을 지정해 대상을 특정하세요."
+            f"단일 중앙창고 모델에서는 부품당 재고 행이 1개여야 합니다 "
+            f"(parts_inventory 청주/무안 분리 행을 합산·단일화 필요 — DB 작업)."
         )
 
     inv_row        = inv_rows[0] if inv_rows else None
@@ -136,7 +145,7 @@ def record_transaction(
         "part_id":                part_id,
         "transaction_type":       norm_type,
         "quantity":               quantity,
-        "location":               location,
+        "location":               dest,       # 출고 목적지 비행교육원 (청주/무안)
         "aircraft_id":            aircraft_id,
         "handled_by":             handled_by,
         "notes":                  notes,
@@ -167,8 +176,6 @@ def record_transaction(
             ).eq("id", inventory_id).execute()
         else:
             new_inv = {"part_id": part_id, "quantity_on_hand": quantity_after}
-            if location is not None:
-                new_inv["location"] = location
             inv_ins = client.table("parts_inventory").insert(new_inv).execute()
             inventory_id = _extract_id(inv_ins.data)
     except Exception as e:
@@ -182,7 +189,7 @@ def record_transaction(
         "quantity_changed": quantity_changed,
         "quantity_before":  quantity_before,
         "quantity_after":   quantity_after,
-        "location":         location,
+        "location":         dest,
         "aircraft_id":      aircraft_id,
         "handled_by":       handled_by,
         "notes":            notes,
@@ -203,7 +210,7 @@ def record_transaction(
         "quantity_before":  quantity_before,
         "quantity_changed": quantity_changed,
         "quantity_after":   quantity_after,
-        "location":         location,
+        "location":         dest,
         "inventory_id":     inventory_id,
         "history_id":       history_id,
     }
@@ -231,4 +238,12 @@ def _extract_id(raw) -> int | None:
 # 향후 변경 예정
 #       · inventory_history 자동적재 트리거 도입 시 수동 INSERT 단계 제거
 #       · parts_inventory 동시성(낙관적 락) 보강 — 현재는 last-write-wins
+#
+# v1.1  2026-06-13  단일 중앙창고 모델 반영 (디커플링)
+#       · location(재고 행 필터) / destination(출고 목적지) 역할 분리
+#         - 재고 차감: 부품당 중앙 단일행에서 수행 (location 필터 제거)
+#         - destination: 목적지 비행교육원(청주/무안) → parts_transactions.location 기록
+#       · destination 파라미터 신설, location 은 하위호환 별칭으로 유지
+#       · 재고 행 2개 이상이면 단일화 안내 메시지로 ValueError
+#         ⚠️ 의존: B담당 parts_inventory 청주/무안 분리행 → 부품당 1행 단일화(합산) 필요
 # =============================================================================

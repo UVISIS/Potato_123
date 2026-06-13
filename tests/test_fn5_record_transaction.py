@@ -55,3 +55,29 @@ def test_unknown_type_rejected(db):
     _seed(db)
     with pytest.raises(ValueError):
         record_transaction(1, "이동", 1, location="청주")
+
+
+# ── 단일 중앙창고 모델 (2026-06-13 디커플링) ──────────────────
+
+def test_destination_recorded_central_stock(db):
+    """destination = 목적지 비행교육원이 parts_transactions.location 에 기록되고,
+    재고는 중앙 단일행에서 차감된다 (location 필터 없음)."""
+    db.seed("components", [{"id": 1, "nomenclature": "OIL FILTER"}])
+    # 중앙창고 단일행 (location=None)
+    db.seed("parts_inventory", [{"id": 10, "part_id": 1, "quantity_on_hand": 5, "location": None}])
+    r = record_transaction(1, "출고", 2, destination="무안", handled_by="세은")
+    assert r["quantity_after"] == 3
+    assert r["location"] == "무안"                       # 목적지 기록
+    assert db.rows("parts_transactions")[0]["location"] == "무안"
+    assert db.rows("inventory_history")[0]["location"] == "무안"
+
+
+def test_multiple_inventory_rows_blocked(db):
+    """부품당 재고 행이 2개(청주/무안 분리 잔존)면 단일화 안내와 함께 ValueError."""
+    db.seed("components", [{"id": 1, "nomenclature": "OIL FILTER"}])
+    db.seed("parts_inventory", [
+        {"id": 10, "part_id": 1, "quantity_on_hand": 3, "location": "청주"},
+        {"id": 11, "part_id": 1, "quantity_on_hand": 2, "location": "무안"},
+    ])
+    with pytest.raises(ValueError):
+        record_transaction(1, "출고", 1, destination="청주")

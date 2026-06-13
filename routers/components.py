@@ -197,3 +197,62 @@ def get_bom(maintenance_type: str, aircraft_model: Optional[str] = None):
         return {"error": str(e)}, 422
     except Exception as e:
         return {"error": str(e)}, 500
+
+# ── 안전재고 상태 분석 (fn7 래핑) ──────────────
+
+@router.get("/reorder-points/{part_id}/analysis")
+def analyze_part_safety_stock(
+    part_id: int,
+    avg_daily_usage: float = 0.0,
+    location: str = "all",
+):
+    """단일 부품 안전재고 상태 분석 (fn7 래핑)
+
+    부족/경고/정상 상태, 부족수량, 소진 예상일수를 반환한다.
+    - avg_daily_usage 미입력(0) 시 소진일수는 무한(inf)으로 처리되며
+      상태 판정(부족/경고/정상)에는 영향이 없다.
+    - safety_stock 기준은 reorder_points 에서 자동 조회.
+    """
+    try:
+        return analyze_safety_stock(
+            part_id=part_id,
+            avg_daily_usage=avg_daily_usage,
+            location=location,
+        )
+    except ValueError as e:
+        return {"error": str(e)}, 422
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+@router.get("/reorder-points/analysis")
+def analyze_all_safety_stock(location: str = "all"):
+    """전체 부품 안전재고 상태 일괄 분석 (fn7 래핑)
+
+    reorder_points 가 설정된 모든 부품에 대해 fn7 을 실행하여
+    재고 상태(부족/경고/정상) 목록을 반환한다. 안전재고 관리 페이지용.
+    소진 예상일수가 필요하면 단일 분석 엔드포인트에 avg_daily_usage 를 전달.
+    """
+    reorders = supabase.table("reorder_points").select("part_id").execute()
+    results = []
+    errors = []
+    for row in (reorders.data or []):
+        pid = row.get("part_id")
+        if pid is None:
+            continue
+        try:
+            results.append(
+                analyze_safety_stock(part_id=pid, avg_daily_usage=0.0, location=location)
+            )
+        except Exception as e:
+            errors.append({"part_id": pid, "error": str(e)})
+
+    # 상태별 요약 (부족 → 경고 → 정상 순 정렬)
+    order = {"부족": 0, "경고": 1, "정상": 2}
+    results.sort(key=lambda r: order.get(r.get("status"), 9))
+    summary = {
+        "부족": sum(1 for r in results if r.get("status") == "부족"),
+        "경고": sum(1 for r in results if r.get("status") == "경고"),
+        "정상": sum(1 for r in results if r.get("status") == "정상"),
+    }
+    return {"summary": summary, "items": results, "errors": errors or None}

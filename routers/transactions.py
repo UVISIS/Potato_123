@@ -41,7 +41,7 @@ def create_transaction(data: TransactionCreate):
             part_id=data.part_id,
             transaction_type=data.transaction_type,
             quantity=data.quantity,
-            location=data.location,
+            destination=data.location,   # 출고 목적지 비행교육원 (청주/무안)
             aircraft_id=data.aircraft_id,
             handled_by=data.handled_by,
             notes=data.notes,
