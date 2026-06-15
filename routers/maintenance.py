@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
-from routers.errors import maintenance_not_found, schedule_not_found, db_error
+from routers.errors import maintenance_not_found, schedule_not_found, db_error, aircraft_not_found
 # fn 연동
 from functions.csc04.fn11_calc_next_maintenance import calc_next_maintenance
 from functions.csc04.fn12_calc_d_time import calc_d_time

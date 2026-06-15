@@ -4,7 +4,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
-from routers.errors import aircraft_not_found, exchange_rate_not_found, db_error
+from routers.errors import aircraft_not_found, exchange_rate_not_found, db_error, error_response, ErrorCode
+
+def not_found(resource: str, resource_id):
+    error_response(404, ErrorCode.MAINTENANCE_NOT_FOUND, f"{resource} ID {resource_id}를 찾을 수 없습니다")
 # fn 연동
 from functions.csc05.fn15_refresh_dashboard_metrics import refresh_dashboard_metrics
 from functions.csc03.fn8_exchange_rate import get_exchange_rate, evaluate_purchase_timing

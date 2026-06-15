@@ -122,17 +122,6 @@ def get_inventory():
     except Exception as e:
         return {"error": str(e)}
 
-    result = []
-    for item in inventory.data:
-        part_id = item.get("part_id")
-        reorder = supabase.table("reorder_points")\
-            .select("*")\
-            .eq("part_id", part_id).execute()
-        item["reorder_points"] = reorder.data[0] if reorder.data else None
-        result.append(item)
-
-    return result
-
 @router.get("/inventory/{part_id}")
 def get_inventory_by_part(part_id: int):
     """특정 부품 재고 조회"""
