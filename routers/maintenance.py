@@ -14,6 +14,19 @@ from functions.csc04.fn14_generate_maintenance_alarms import generate_maintenanc
 from functions.csc02.fn5_record_transaction import record_transaction
 
 
+# aircraft_model 정규화 헬퍼 (aircraft.model → bom.aircraft_model)
+_BOM_MODEL_MAP = {
+    "Diamond DA40 NG": "DA-40NG",
+    "Diamond DA42 NG": "DA-42NG",
+    "DA40NG": "DA-40NG",
+    "DA42NG": "DA-42NG",
+}
+
+def _normalize_bom_model(model: str | None) -> str | None:
+    if model is None:
+        return None
+    return _BOM_MODEL_MAP.get(model, model)
+
 router = APIRouter(prefix="/maintenance", tags=["CSC-04 주기정비 관리"])
 
 
@@ -209,7 +222,9 @@ def get_d_time_by_aircraft(aircraft_id: int):
 def get_required_parts_api(aircraft_id: int, maintenance_type: str):
     """정비 유형별 필요 부품 목록 (fn9 래핑)"""
     try:
-        return get_required_parts(str(aircraft_id), maintenance_type)
+        ac = supabase.table("aircraft").select("model").eq("id", aircraft_id).execute()
+        raw_model = ac.data[0]["model"] if ac.data else None
+        return get_required_parts(maintenance_type, _normalize_bom_model(raw_model))
     except Exception as e:
         return {"error": str(e)}
 
@@ -249,6 +264,7 @@ def get_maintenance_overview(aircraft_id: int):
         aircraft_not_found(aircraft_id)
     aircraft = ac.data[0]
     model = aircraft.get("model")
+    bom_model = _normalize_bom_model(model)
 
     scheds = supabase.table("maintenance_schedule").select("*")\
         .eq("aircraft_id", aircraft_id).execute().data or []
@@ -261,7 +277,7 @@ def get_maintenance_overview(aircraft_id: int):
         # BOM 부품 (정비종류 + 기종 일치/전기종)
         bom_rows = supabase.table("bom").select("part_id, required_qty, aircraft_model")\
             .eq("maintenance_type", s["maintenance_type"]).execute().data or []
-        bom_rows = [b for b in bom_rows if b.get("aircraft_model") in (None, model)]
+        bom_rows = [b for b in bom_rows if b.get("aircraft_model") in (None, bom_model)]
 
         parts = []
         for b in bom_rows:

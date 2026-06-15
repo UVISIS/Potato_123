@@ -11,6 +11,16 @@ from functions.csc02.fn4_get_inventory import get_inventory as fn4_get_inventory
 from functions.csc03.fn7_analyze_safety_stock import analyze_safety_stock
 from functions.csc02.fn13_get_maintenance_bom import get_maintenance_bom
 
+_BOM_MODEL_MAP = {
+    "Diamond DA40 NG": "DA-40NG",
+    "Diamond DA42 NG": "DA-42NG",
+    "DA40NG": "DA-40NG",
+    "DA42NG": "DA-42NG",
+}
+def _normalize_bom_model(model):
+    if model is None: return None
+    return _BOM_MODEL_MAP.get(model, model)
+
 router = APIRouter(tags=["CSC-02 부품/자재 관리"])
 
 
@@ -193,7 +203,7 @@ def get_bom(maintenance_type: str, aircraft_model: Optional[str] = None):
     try:
         return get_maintenance_bom(
             maintenance_type=maintenance_type,
-            aircraft_model=aircraft_model,
+            aircraft_model=_normalize_bom_model(aircraft_model),
         )
     except ValueError as e:
         return {"error": str(e)}, 422
