@@ -44,3 +44,20 @@ ALARM_INFO_DAYS      = 30   # 날짜기반 ≤ 30일
 
 # ── 재고 임계치 ──────────────────────────────────────────────────
 STOCK_WARNING_RATIO  = 1.5  # 재고 ≤ safety_stock × 1.5 → 경고 (UI 스펙 일치)
+
+# ── 기종 정규화 (aircraft.model → 표준 모델 코드) ──────────────────
+# bom.aircraft_model / component_aircraft.aircraft_model 과 동일한 표기로 통일.
+# routers/maintenance.py, routers/components.py 의 _BOM_MODEL_MAP 과 동일 매핑.
+AIRCRAFT_MODEL_MAP = {
+    "Diamond DA40 NG": "DA-40NG",
+    "Diamond DA42 NG": "DA-42NG",
+    "DA40NG": "DA-40NG",
+    "DA42NG": "DA-42NG",
+}
+
+
+def normalize_aircraft_model(model: str | None) -> str | None:
+    """aircraft.model 표기를 component_aircraft/bom 기준 표준 코드로 변환."""
+    if model is None:
+        return None
+    return AIRCRAFT_MODEL_MAP.get(model, model)
