@@ -179,17 +179,17 @@ def action_forecast(aircraft_id: int):
     if not result:
         return
     items = result if isinstance(result, list) else result.get("forecasts") or result.get("items") or [result]
-    print(f"\n  {'정비유형':<28s}  {'도래 예상일':<14s}  {'발주 시작일':<14s}  {'리드타임':>6s}")
-    print("  " + "-" * 70)
-    for f in items[:15]:
+    print(f"\n  {'정비유형':<28s}  {'도래 예상일':<14s}  {'발주 시작일':<14s}  {'리드타임':>6s}  {'권고'}")
+    print("  " + "-" * 80)
+    for f in items:
         mt   = str(f.get("maintenance_type", ""))[:27]
         due  = str(f.get("due_date", ""))[:13]
         obd  = str(f.get("order_by_date", ""))[:13]
         ltd  = f.get("lead_time_days", "")
         ltd_str = f"{ltd}일" if isinstance(ltd, (int, float)) else str(ltd)
-        print(f"  {mt:<28s}  {due:<14s}  {obd:<14s}  {ltd_str:>6s}")
-    if len(items) > 15:
-        print(f"  ... 외 {len(items)-15}건")
+        rec  = str(f.get("recommendation", ""))
+        print(f"  {mt:<28s}  {due:<14s}  {obd:<14s}  {ltd_str:>6s}  {rec}")
+    print(f"\n  총 {len(items)}건")
 
 
 # ── 메뉴 ③ 비행시간 입력 (DB 변경) ─────────────────────────────────────────
