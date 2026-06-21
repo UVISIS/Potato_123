@@ -182,13 +182,15 @@ def action_forecast(aircraft_id: int):
     print(f"\n  {'정비유형':<28s}  {'도래 예상일':<14s}  {'발주 시작일':<14s}  {'리드타임':>6s}  {'권고'}")
     print("  " + "-" * 80)
     for f in items:
-        mt   = str(f.get("maintenance_type", ""))[:27]
+        cnt  = f.get("schedule_count", 1)
+        mt   = str(f.get("maintenance_type", ""))
+        mt_label = (f"{mt} ×{cnt}" if cnt > 1 else mt)[:30]
         due  = str(f.get("due_date", ""))[:13]
         obd  = str(f.get("order_by_date", ""))[:13]
         ltd  = f.get("lead_time_days", "")
         ltd_str = f"{ltd}일" if isinstance(ltd, (int, float)) else str(ltd)
         rec  = str(f.get("recommendation", ""))
-        print(f"  {mt:<28s}  {due:<14s}  {obd:<14s}  {ltd_str:>6s}  {rec}")
+        print(f"  {mt_label:<30s}  {due:<14s}  {obd:<14s}  {ltd_str:>6s}  {rec}")
     print(f"\n  총 {len(items)}건")
 
 

@@ -124,12 +124,15 @@ def forecast_purchase_timing(
     ).data or []
 
     # 같은 정비유형이 여러 schedule 행으로 등록된 경우 가장 빨리 도래하는 1건만 사용
+    # schedule_count: 동일 유형 행 수 (표시용)
     earliest: dict[str, dict] = {}
+    counts:   dict[str, int]  = {}
     for s in scheds:
         mt = s.get("maintenance_type", "")
         ih = s.get("interval_hours")
         if not ih or float(ih) <= 0:
             continue
+        counts[mt] = counts.get(mt, 0) + 1
         due = s.get("due_hours")
         rem = float(due) - current_hours if due is not None else float(ih)
         if mt not in earliest or rem < earliest[mt]["_remaining"]:
@@ -219,6 +222,7 @@ def forecast_purchase_timing(
             items.append({
                 "maintenance_schedule_id": s["id"],
                 "maintenance_type":        s["maintenance_type"],
+                "schedule_count":          counts.get(s["maintenance_type"], 1),
                 "interval_hours":          float(interval_hours),
                 "remaining_hours":         round(remaining_hours, 1),
                 "days_until_due":          days_until_due,
