@@ -122,7 +122,7 @@ def calc_d_time(
     }
 
     try:
-        if existing.data:
+        if existing and existing.data:
             d_id = existing.data["id"]
             client.table("d_time_counter").update(payload).eq("id", d_id).execute()
         else:

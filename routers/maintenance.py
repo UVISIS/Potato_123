@@ -232,7 +232,9 @@ def get_required_parts_api(aircraft_id: int, maintenance_type: str):
 def check_parts_availability(aircraft_id: int, maintenance_type: str):
     """정비 전 부품 재고 충족 여부 확인 (fn10 래핑)"""
     try:
-        return fn10_check(aircraft_id, maintenance_type)
+        ac = supabase.table("aircraft").select("model").eq("id", aircraft_id).execute()
+        raw_model = ac.data[0]["model"] if ac.data else None
+        return fn10_check(maintenance_type, _normalize_bom_model(raw_model))
     except Exception as e:
         return {"error": str(e)}
 

@@ -33,7 +33,12 @@ DEFAULT_HORIZON_DAYS        = 365     # 예측 기간(기본 1년)
 DEFAULT_LEAD_TIME_DAYS      = 30      # 리드타임 기본값(reorder_points 미설정 시)
 
 from functions.db import get_client
-from functions.constants import ANNUAL_FLIGHT_HOURS, DAILY_AVG_FLIGHT_HOURS
+from functions.constants import (
+    ANNUAL_FLIGHT_HOURS,
+    DAILY_AVG_FLIGHT_HOURS,
+    normalize_aircraft_model,
+    normalize_maintenance_type,
+)
 
 
 def forecast_purchase_timing(
@@ -106,6 +111,7 @@ def forecast_purchase_timing(
     if not ac.data:
         raise ValueError(f"aircraft_id {aircraft_id} 에 해당하는 항공기가 없습니다.")
     model = ac.data.get("model")
+    model_norm = normalize_aircraft_model(model)
     current_hours = float(ac.data.get("total_flight_hours") or 0)
 
     # ── 활성 정비 스케줄 조회
@@ -141,13 +147,13 @@ def forecast_purchase_timing(
         bom_rows = (
             client.table("bom")
             .select("part_id, required_qty, aircraft_model, maintenance_type")
-            .eq("maintenance_type", s["maintenance_type"])
+            .eq("maintenance_type", normalize_maintenance_type(s["maintenance_type"]))
             .execute()
         ).data or []
         # 기종 일치 또는 전기종(null) 만
         bom_rows = [
             b for b in bom_rows
-            if b.get("aircraft_model") in (None, model)
+            if b.get("aircraft_model") in (None, model_norm)
         ]
 
         for b in bom_rows:

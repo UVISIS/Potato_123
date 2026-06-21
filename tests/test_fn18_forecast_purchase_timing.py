@@ -15,7 +15,7 @@ def _seed(db, due_hours=100):
          "interval_hours": 100, "due_hours": due_hours, "status": "scheduled"},
     ])
     db.seed("bom", [
-        {"id": 1, "maintenance_type": "기체100HRS", "aircraft_model": "DA42NG",
+        {"id": 1, "maintenance_type": "기체100HRS", "aircraft_model": "DA-42NG",
          "part_id": 500, "required_qty": 2},
     ])
     db.seed("components", [{"id": 500, "nomenclature": "OIL FILTER"}])

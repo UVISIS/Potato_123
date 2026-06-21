@@ -61,3 +61,22 @@ def normalize_aircraft_model(model: str | None) -> str | None:
     if model is None:
         return None
     return AIRCRAFT_MODEL_MAP.get(model, model)
+
+
+# ── 정비유형 정규화 (maintenance_schedule.maintenance_type → bom 표준 코드) ──
+# maintenance_schedule 은 설명형 한글 라벨("항공기 100 HRS")을 쓰고,
+# bom 은 압축 코드("100H")를 써서 서로 다른 체계를 사용한다.
+# Governor/Propeller 등 이미 동일 표기인 항목은 매핑 불필요.
+MAINTENANCE_TYPE_BOM_MAP = {
+    "항공기 100 HRS": "100H",
+    "항공기 200 HRS": "200H",
+    "ENG' 100 HRS":  "Engine_100H",
+    "ENG' 300 HRS":  "Engine_300H",
+}
+
+
+def normalize_maintenance_type(maintenance_type: str | None) -> str | None:
+    """maintenance_schedule.maintenance_type 표기를 bom 기준 코드로 변환. 매핑 없으면 원본 유지."""
+    if maintenance_type is None:
+        return None
+    return MAINTENANCE_TYPE_BOM_MAP.get(maintenance_type, maintenance_type)
