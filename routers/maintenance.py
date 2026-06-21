@@ -260,8 +260,9 @@ def get_maintenance_overview(aircraft_id: int):
     기체별로 정비 스케줄마다 D-Time(잔여시간/일수)과 BOM 소요부품·현재고를
     한 번에 묶어 반환한다. (프론트 Page7 — 여러 호출 조합 대체)
     """
-    ac = supabase.table("aircraft").select("id, registration, model, total_flight_hours")\
-        .eq("id", aircraft_id).execute()
+    ac = supabase.table("aircraft").select(
+        "id, registration, model, serial_number, manufacture_year, location, total_flight_hours"
+    ).eq("id", aircraft_id).execute()
     if not ac.data:
         aircraft_not_found(aircraft_id)
     aircraft = ac.data[0]

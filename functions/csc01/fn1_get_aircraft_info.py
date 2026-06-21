@@ -76,7 +76,7 @@ def get_aircraft_info(
     # ── aircraft 조회
     q = client.table("aircraft").select(
         "id, registration, model, category, status, "
-        "serial_number, manufacture_year, "
+        "serial_number, manufacture_year, location, "
         "total_flight_hours, last_inspection_date"
     )
 
@@ -158,6 +158,7 @@ def get_aircraft_info(
         "status":                data.get("status"),
         "serial_number":         data.get("serial_number"),
         "manufacture_year":      data.get("manufacture_year"),
+        "location":              data.get("location"),
         "total_flight_hours":    data["total_flight_hours"],      # int (aircraft 기준)
         "accumulated_hours":     accumulated_hours,               # float | None (정밀값)
         "last_inspection_date":  (

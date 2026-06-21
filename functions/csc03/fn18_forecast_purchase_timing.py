@@ -39,6 +39,7 @@ from functions.constants import (
     normalize_aircraft_model,
     normalize_maintenance_type,
 )
+from functions.csc03.fn_rate_forecast import predict_low_rate_dates, rate_timing_tag
 
 
 def forecast_purchase_timing(
@@ -97,6 +98,12 @@ def forecast_purchase_timing(
 
     today_d = date.fromisoformat(today) if today else date.today()
     hours_per_day = annual_flight_hours / 365.0
+
+    # 환율 저점 예측 (항목별 구매 시기 태그에 사용)
+    try:
+        rate_forecast = predict_low_rate_dates(today=today_d)
+    except Exception:
+        rate_forecast = {}
 
     client = get_client()
 
@@ -223,6 +230,7 @@ def forecast_purchase_timing(
                 "maintenance_schedule_id": s["id"],
                 "maintenance_type":        s["maintenance_type"],
                 "schedule_count":          counts.get(s["maintenance_type"], 1),
+                "rate_timing":             rate_timing_tag(order_by_date.isoformat(), rate_forecast),
                 "interval_hours":          float(interval_hours),
                 "remaining_hours":         round(remaining_hours, 1),
                 "days_until_due":          days_until_due,
@@ -255,6 +263,7 @@ def forecast_purchase_timing(
         "hours_per_calendar_day": round(hours_per_day, 3),
         "horizon_days":           horizon_days,
         "as_of":                  today_d.isoformat(),
+        "rate_forecast":          rate_forecast,
         "items":                  items,
         "summary":                summary,
     }

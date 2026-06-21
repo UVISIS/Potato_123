@@ -179,18 +179,30 @@ def action_forecast(aircraft_id: int):
     if not result:
         return
     items = result if isinstance(result, list) else result.get("forecasts") or result.get("items") or [result]
-    print(f"\n  {'정비유형':<28s}  {'도래 예상일':<14s}  {'발주 시작일':<14s}  {'리드타임':>6s}  {'권고'}")
-    print("  " + "-" * 80)
+    rf = result.get("rate_forecast", {}) if isinstance(result, dict) else {}
+
+    # 환율 저점 예측 요약 출력
+    if rf:
+        cur  = rf.get("current_rate", "-")
+        h1d  = rf.get("h1_low_date", "-")
+        h1r  = rf.get("h1_low_rate", "-")
+        h2d  = rf.get("h2_low_date", "-")
+        h2r  = rf.get("h2_low_rate", "-")
+        trnd = rf.get("trend_per_month", 0)
+        print(f"\n  [환율 저점 예측]  현재 {cur}원  |  추세 {trnd:+.1f}원/월")
+        print(f"  상반기 저점 예상: {h1d} ({h1r}원)  |  하반기 저점 예상: {h2d} ({h2r}원)")
+
+    print(f"\n  {'정비유형':<30s}  {'도래 예상일':<12s}  {'발주 시작일':<12s}  {'권고':<12s}  {'환율 시기'}")
+    print("  " + "-" * 90)
     for f in items:
         cnt  = f.get("schedule_count", 1)
         mt   = str(f.get("maintenance_type", ""))
-        mt_label = (f"{mt} ×{cnt}" if cnt > 1 else mt)[:30]
-        due  = str(f.get("due_date", ""))[:13]
-        obd  = str(f.get("order_by_date", ""))[:13]
-        ltd  = f.get("lead_time_days", "")
-        ltd_str = f"{ltd}일" if isinstance(ltd, (int, float)) else str(ltd)
-        rec  = str(f.get("recommendation", ""))
-        print(f"  {mt_label:<30s}  {due:<14s}  {obd:<14s}  {ltd_str:>6s}  {rec}")
+        mt_label = (f"{mt} ×{cnt}" if cnt > 1 else mt)[:29]
+        due  = str(f.get("due_date", ""))[:11]
+        obd  = str(f.get("order_by_date", ""))[:11]
+        rec  = str(f.get("recommendation", ""))[:11]
+        rtag = str(f.get("rate_timing", "-"))
+        print(f"  {mt_label:<30s}  {due:<12s}  {obd:<12s}  {rec:<12s}  {rtag}")
     print(f"\n  총 {len(items)}건")
 
 
