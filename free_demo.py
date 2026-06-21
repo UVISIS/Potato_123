@@ -184,26 +184,42 @@ def action_forecast(aircraft_id: int):
     # 환율 저점 예측 요약 출력
     if rf:
         cur  = rf.get("current_rate", "-")
-        h1d  = rf.get("h1_low_date", "-")
-        h1r  = rf.get("h1_low_rate", "-")
         h2d  = rf.get("h2_low_date", "-")
         h2r  = rf.get("h2_low_rate", "-")
+        h1d  = rf.get("h1_low_date", "-")
+        h1r  = rf.get("h1_low_rate", "-")
         trnd = rf.get("trend_per_month", 0)
         print(f"\n  [환율 저점 예측]  현재 {cur}원  |  추세 {trnd:+.1f}원/월")
-        print(f"  상반기 저점 예상: {h1d} ({h1r}원)  |  하반기 저점 예상: {h2d} ({h2r}원)")
+        print(f"  하반기 저점 예상: {h2d} ({h2r}원)  |  상반기 저점 예상: {h1d} ({h1r}원)")
+
+    # 정비유형 기준으로 중복 제거 — 같은 유형의 BOM 부품이 여러 행이어도 1행으로 표시
+    # schedule_count(스케줄 중복 수) + 부품 수를 합산하여 ×N 표기
+    seen: dict[str, dict] = {}
+    for f in items:
+        mt = str(f.get("maintenance_type", ""))
+        if mt not in seen:
+            seen[mt] = {**f, "_part_count": 1}
+        else:
+            seen[mt]["_part_count"] += 1
+            # 더 이른 발주 기준일로 갱신
+            if f.get("order_by_date", "") < seen[mt].get("order_by_date", ""):
+                seen[mt].update({k: v for k, v in f.items() if k != "_part_count"})
+    grouped = list(seen.values())
 
     print(f"\n  {'정비유형':<30s}  {'도래 예상일':<12s}  {'발주 시작일':<12s}  {'권고':<12s}  {'환율 시기'}")
     print("  " + "-" * 90)
-    for f in items:
-        cnt  = f.get("schedule_count", 1)
-        mt   = str(f.get("maintenance_type", ""))
-        mt_label = (f"{mt} ×{cnt}" if cnt > 1 else mt)[:29]
+    for f in grouped:
+        sched_cnt = f.get("schedule_count", 1)   # 동일 정비유형 스케줄 수
+        part_cnt  = f.get("_part_count", 1)       # 해당 유형 BOM 부품 수
+        n = max(sched_cnt, part_cnt)
+        mt = str(f.get("maintenance_type", ""))
+        mt_label = (f"{mt} ×{n}" if n > 1 else mt)[:29]
         due  = str(f.get("due_date", ""))[:11]
         obd  = str(f.get("order_by_date", ""))[:11]
         rec  = str(f.get("recommendation", ""))[:11]
         rtag = str(f.get("rate_timing", "-"))
         print(f"  {mt_label:<30s}  {due:<12s}  {obd:<12s}  {rec:<12s}  {rtag}")
-    print(f"\n  총 {len(items)}건")
+    print(f"\n  총 {len(grouped)}건  (부품 {len(items)}종)")
 
 
 # ── 환율 서브메뉴 ─────────────────────────────────────────────────────────────
