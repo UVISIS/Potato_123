@@ -230,7 +230,7 @@ def forecast_purchase_timing(
                 "maintenance_schedule_id": s["id"],
                 "maintenance_type":        s["maintenance_type"],
                 "schedule_count":          counts.get(s["maintenance_type"], 1),
-                "rate_timing":             rate_timing_tag(order_by_date.isoformat(), rate_forecast),
+                "rate_timing":             rate_timing_tag(order_by_date.isoformat(), rate_forecast, today=today_d),
                 "interval_hours":          float(interval_hours),
                 "remaining_hours":         round(remaining_hours, 1),
                 "days_until_due":          days_until_due,

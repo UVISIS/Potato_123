@@ -117,38 +117,40 @@ def predict_low_rate_dates(today: date | None = None) -> dict:
     }
 
 
-def rate_timing_tag(order_by_date: str, forecast: dict) -> str:
+def rate_timing_tag(order_by_date: str, forecast: dict, today: date | None = None) -> str:
     """
     발주 기준일과 환율 저점 예상일을 비교하여 구매 시기 권고 태그를 반환.
 
-    Tags
-    ----
-    저점전구매필요   : 저점보다 먼저 사야 함 — 지금 구매가 최선
-    저점시기구매     : 발주일이 저점 ±30일 이내 — 타이밍 적합
-    저점후구매가능   : 저점이 먼저 오고 발주일이 나중 — 저점 대기 후 구매 권고
+    Tags (3종)
+    ----------
+    긴급구매필요   : 발주 기준일이 이미 지났거나 오늘 — 즉시 발주 필요
+    하반기구매필요 : 가장 가까운 저점이 하반기(7월) — 7월 저점 전에 구매
+    상반기구매예정 : 가장 가까운 저점이 내년 상반기(1월) — 여유 있음, 상반기 저점 활용 가능
     """
     if not order_by_date or not forecast:
         return "-"
 
+    today = today or date.today()
     try:
         obd = date.fromisoformat(order_by_date)
     except ValueError:
         return "-"
 
+    # 발주 기준일이 오늘 이하면 긴급
+    if obd <= today:
+        return "긴급구매필요"
+
+    # 가장 가까운 저점 선택
     low_dates = []
-    for key in ("h1_low_date", "h2_low_date"):
+    for key in ("h2_low_date", "h1_low_date"):
         if forecast.get(key):
-            low_dates.append(date.fromisoformat(forecast[key]))
+            low_dates.append((key, date.fromisoformat(forecast[key])))
     if not low_dates:
         return "-"
 
-    # 발주일에 가장 가까운 저점일 선택
-    nearest = min(low_dates, key=lambda d: abs((d - obd).days))
-    diff = (nearest - obd).days   # 양수 = 저점이 발주일 이후
+    nearest_key, nearest = min(low_dates, key=lambda x: abs((x[1] - obd).days))
 
-    if diff > 30:
-        return f"저점전구매필요({nearest.strftime('%m/%d')}저점)"
-    elif abs(diff) <= 30:
-        return f"저점시기구매({nearest.strftime('%m/%d')}저점)"
+    if nearest_key == "h2_low_date":
+        return f"하반기구매필요({nearest.strftime('%m월')}저점)"
     else:
-        return f"저점후구매가능({nearest.strftime('%m/%d')}저점)"
+        return f"상반기구매예정({nearest.strftime('%m월')}저점)"
