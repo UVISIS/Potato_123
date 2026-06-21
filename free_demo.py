@@ -152,11 +152,39 @@ def action_inquiry(aircraft_id: int):
     print("\n  -- 부품 가용성 판정(fn10) --")
     pp(get(f"/maintenance/parts-check/{aircraft_id}", maintenance_type=mt))
 
-    print("\n  -- 비행시간 기반 구매시기 예측(fn18) --")
-    pp(get(f"/procurement/forecast/{aircraft_id}", annual_flight_hours=800.0))
+    pass
 
 
-# ── 메뉴 ② 비행시간 입력 (DB 변경) ─────────────────────────────────────────
+# ── 메뉴 ② 구매시기 예측 (fn18, 읽기전용) ──────────────────────────────────
+
+def action_forecast(aircraft_id: int):
+    print("\n  -- 비행시간 기반 구매시기 예측 (fn18) --")
+    h_raw = input("  연간 비행시간 (엔터=800h): ").strip()
+    try:
+        annual = float(h_raw) if h_raw else 800.0
+        if annual <= 0:
+            raise ValueError
+    except ValueError:
+        print("  0보다 큰 숫자를 입력하세요.")
+        return
+    result = get(f"/procurement/forecast/{aircraft_id}", annual_flight_hours=annual)
+    if not result:
+        return
+    items = result if isinstance(result, list) else result.get("forecasts") or result.get("items") or [result]
+    print(f"\n  {'정비유형':<28s}  {'도래 예상일':<14s}  {'발주 시작일':<14s}  {'리드타임':>6s}")
+    print("  " + "-" * 70)
+    for f in items[:15]:
+        mt   = str(f.get("maintenance_type", ""))[:27]
+        due  = str(f.get("due_date", ""))[:13]
+        obd  = str(f.get("order_by_date", ""))[:13]
+        ltd  = f.get("lead_time_days", "")
+        ltd_str = f"{ltd}일" if isinstance(ltd, (int, float)) else str(ltd)
+        print(f"  {mt:<28s}  {due:<14s}  {obd:<14s}  {ltd_str:>6s}")
+    if len(items) > 15:
+        print(f"  ... 외 {len(items)-15}건")
+
+
+# ── 메뉴 ③ 비행시간 입력 (DB 변경) ─────────────────────────────────────────
 
 def action_flight_hours(aircraft_id: int):
     today_str = date.today().isoformat()
@@ -278,11 +306,12 @@ def main():
 
         while True:
             menu = [
-                {"key": "inquiry", "label": "재고 / BOM / 필요부품 / 구매시기 조회   (읽기전용, 100% 안전)"},
-                {"key": "flight", "label": "비행시간 입력                           (DB 변경)"},
+                {"key": "inquiry",  "label": "재고 / BOM / 필요부품 조회             (읽기전용, 안전)"},
+                {"key": "forecast", "label": "구매시기 예측 (fn18)                   (읽기전용, 안전)"},
+                {"key": "flight",   "label": "비행시간 입력                           (DB 변경)"},
                 {"key": "complete", "label": "정비이력 등록 (출고+스케줄완료+D-Time+알람) (DB 변경)"},
-                {"key": "switch", "label": "다른 기체 선택"},
-                {"key": "quit", "label": "종료"},
+                {"key": "switch",   "label": "다른 기체 선택"},
+                {"key": "quit",     "label": "종료"},
             ]
             choice = pick(menu, "\n작업 선택")
             if choice is None or choice["key"] == "quit":
@@ -290,6 +319,8 @@ def main():
                 return
             if choice["key"] == "inquiry":
                 action_inquiry(aircraft_id)
+            elif choice["key"] == "forecast":
+                action_forecast(aircraft_id)
             elif choice["key"] == "flight":
                 action_flight_hours(aircraft_id)
                 ac = show_aircraft_summary(aircraft_id)
