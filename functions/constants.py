@@ -49,10 +49,10 @@ STOCK_WARNING_RATIO  = 1.5  # 재고 ≤ safety_stock × 1.5 → 경고 (UI 스�
 # bom.aircraft_model / component_aircraft.aircraft_model 과 동일한 표기로 통일.
 # routers/maintenance.py, routers/components.py 의 _BOM_MODEL_MAP 과 동일 매핑.
 AIRCRAFT_MODEL_MAP = {
-    "Diamond DA40 NG": "DA-40NG",
-    "Diamond DA42 NG": "DA-42NG",
-    "DA40NG": "DA-40NG",
-    "DA42NG": "DA-42NG",
+    "Diamond DA40 NG": "DA40NG",
+    "Diamond DA42 NG": "DA42NG",
+    "DA-40NG": "DA40NG",
+    "DA-42NG": "DA42NG",
 }
 
 

@@ -7,6 +7,8 @@ __pycache__/
 dist/
 build/
 .pytest_cache/
+make_doc.py
+*.docx
 
 __pycache__/
 *.pyc

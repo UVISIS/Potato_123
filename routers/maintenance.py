@@ -16,10 +16,10 @@ from functions.csc02.fn5_record_transaction import record_transaction
 
 # aircraft_model 정규화 헬퍼 (aircraft.model → bom.aircraft_model)
 _BOM_MODEL_MAP = {
-    "Diamond DA40 NG": "DA-40NG",
-    "Diamond DA42 NG": "DA-42NG",
-    "DA40NG": "DA-40NG",
-    "DA42NG": "DA-42NG",
+    "Diamond DA40 NG": "DA40NG",
+    "Diamond DA42 NG": "DA42NG",
+    "DA-40NG": "DA40NG",
+    "DA-42NG": "DA42NG",
 }
 
 def _normalize_bom_model(model: str | None) -> str | None:

@@ -12,10 +12,10 @@ from functions.csc03.fn7_analyze_safety_stock import analyze_safety_stock
 from functions.csc02.fn13_get_maintenance_bom import get_maintenance_bom
 
 _BOM_MODEL_MAP = {
-    "Diamond DA40 NG": "DA-40NG",
-    "Diamond DA42 NG": "DA-42NG",
-    "DA40NG": "DA-40NG",
-    "DA42NG": "DA-42NG",
+    "Diamond DA40 NG": "DA40NG",
+    "Diamond DA42 NG": "DA42NG",
+    "DA-40NG": "DA40NG",
+    "DA-42NG": "DA42NG",
 }
 def _normalize_bom_model(model):
     if model is None: return None

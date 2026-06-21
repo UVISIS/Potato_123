@@ -121,8 +121,8 @@ def analyze_safety_stock(
     current_qty: int = sum(r["quantity_on_hand"] for r in inv.data)
 
     # ── 소진 예상 일수
-    days_until_stockout: float = (
-        float("inf") if avg_daily_usage == 0
+    days_until_stockout = (
+        None if avg_daily_usage == 0
         else round(current_qty / avg_daily_usage, 1)
     )
 

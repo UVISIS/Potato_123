@@ -178,7 +178,7 @@ def forecast_purchase_timing(
                 .execute()
             )
             lead_time = default_lead_time_days
-            if rp.data and rp.data.get("lead_time_days") is not None:
+            if rp and rp.data and rp.data.get("lead_time_days") is not None:
                 lead_time = int(rp.data["lead_time_days"])
 
             comp = (
@@ -188,7 +188,7 @@ def forecast_purchase_timing(
                 .maybe_single()
                 .execute()
             )
-            nomenclature = comp.data.get("nomenclature") if comp.data else None
+            nomenclature = comp.data.get("nomenclature") if (comp and comp.data) else None
 
             order_by_date = due_date - timedelta(days=lead_time)
             shortfall = max(0, required_qty - current_stock)
