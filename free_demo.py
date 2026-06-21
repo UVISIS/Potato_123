@@ -159,14 +159,22 @@ def action_inquiry(aircraft_id: int):
 
 def action_forecast(aircraft_id: int):
     print("\n  -- 비행시간 기반 구매시기 예측 (fn18) --")
-    h_raw = input("  연간 비행시간 (엔터=800h): ").strip()
-    try:
-        annual = float(h_raw) if h_raw else 800.0
-        if annual <= 0:
-            raise ValueError
-    except ValueError:
-        print("  0보다 큰 숫자를 입력하세요.")
+    ac = get(f"/aircraft/{aircraft_id}")
+    if not ac:
         return
+
+    total_hours = float(ac.get("total_flight_hours") or ac.get("accumulated_hours") or 0)
+    manufacture_year = ac.get("manufacture_year")
+    current_year = date.today().year
+
+    if manufacture_year and current_year > int(manufacture_year):
+        years = current_year - int(manufacture_year)
+        annual = round(total_hours / years, 1)
+        print(f"  ▶ 연간 비행시간 자동 계산: {total_hours}h ÷ {years}년 ({manufacture_year}~{current_year}) = {annual}h/년")
+    else:
+        annual = 800.0
+        print(f"  ▶ 연간 비행시간: {annual}h/년 (함대 기준값 — 제조연도 미등록)")
+
     result = get(f"/procurement/forecast/{aircraft_id}", annual_flight_hours=annual)
     if not result:
         return
