@@ -206,61 +206,94 @@ def action_forecast(aircraft_id: int):
     print(f"\n  총 {len(items)}건")
 
 
-# ── 메뉴 ③ 환율 현황 (읽기전용) ─────────────────────────────────────────────
+# ── 환율 서브메뉴 ─────────────────────────────────────────────────────────────
 
-def action_rate_info():
-    """현재 EUR/KRW 환율 및 최근 6개월 추이 출력."""
-    from functions.csc03.fn_rate_forecast import _load_eur_rates
-    rates = _load_eur_rates()
-    if not rates:
-        print("  환율 데이터를 불러올 수 없습니다.")
-        return
+def action_rate_submenu():
+    """환율 탭 — 현황 조회 및 오늘자 환율 입력 서브메뉴."""
+    from functions.csc03.fn_rate_forecast import _load_eur_rates, predict_low_rate_dates
+    from functions.db import get_client
 
-    print("\n  [EUR/KRW 현재 환율]")
-    recent = rates[-6:]
-    for d, v in recent:
-        bar = "█" * int((v - 1550) // 10) if v > 1550 else ""
-        print(f"  {d.strftime('%Y-%m')}  {v:>7,.1f}원  {bar}")
+    while True:
+        sub = [
+            {"key": "status",   "label": "환율 현황 (EUR/KRW 최근 6개월)"},
+            {"key": "input",    "label": "오늘자 환율 입력                  (DB 변경)"},
+            {"key": "back",     "label": "돌아가기"},
+        ]
+        choice = pick(sub, "\n[환율 메뉴]")
+        if choice is None or choice["key"] == "back":
+            return
 
-    cur = rates[-1][1]
-    prev = rates[-7][1] if len(rates) >= 7 else rates[0][1]
-    diff = cur - prev
-    sign = "▲" if diff > 0 else "▼" if diff < 0 else "━"
-    print(f"\n  현재: {cur:,.1f}원  |  6개월 전: {prev:,.1f}원  |  변동 {sign}{abs(diff):.1f}원")
+        # ── 환율 현황
+        if choice["key"] == "status":
+            rates = _load_eur_rates()
+            if not rates:
+                print("  환율 데이터를 불러올 수 없습니다.")
+                continue
+
+            print("\n  [EUR/KRW 현황]")
+            recent = rates[-6:]
+            min_v = min(v for _, v in recent)
+            max_v = max(v for _, v in recent)
+            for d, v in recent:
+                bar_len = int((v - min_v) / max(max_v - min_v, 1) * 20)
+                bar = "█" * bar_len
+                print(f"  {d.strftime('%Y-%m')}  {v:>8,.1f}원  {bar}")
+
+            cur  = rates[-1][1]
+            prev = rates[-7][1] if len(rates) >= 7 else rates[0][1]
+            diff = cur - prev
+            sign = "▲" if diff > 0 else "▼" if diff < 0 else "━"
+            print(f"\n  현재: {cur:,.1f}원  |  6개월 전: {prev:,.1f}원  |  변동 {sign}{abs(diff):.1f}원")
+
+            fc = predict_low_rate_dates()
+            if fc:
+                trnd = fc.get("trend_per_month", 0)
+                tdesc = "상승세" if trnd > 2 else "하락세" if trnd < -2 else "보합세"
+                print(f"  최근 추세: {trnd:+.1f}원/월 ({tdesc})")
+                print(f"\n  저점 예측 ▶ 하반기(H2): {fc.get('h2_low_date')} {fc.get('h2_low_rate'):,.1f}원")
+                print(f"             상반기(H1): {fc.get('h1_low_date')} {fc.get('h1_low_rate'):,.1f}원")
+
+        # ── 오늘자 환율 입력
+        elif choice["key"] == "input":
+            today_str = date.today().isoformat()
+            today_ym  = date.today().strftime("%Y-%m")
+            rates = _load_eur_rates()
+            cur   = rates[-1][1] if rates else None
+            if cur:
+                print(f"\n  현재 DB 최신 환율: {cur:,.1f}원 ({rates[-1][0].strftime('%Y-%m')})")
+
+            raw = input(f"  오늘({today_str}) EUR/KRW 환율 입력 (엔터=취소): ").strip()
+            if not raw:
+                print("  취소되었습니다.")
+                continue
+            try:
+                new_rate = float(raw)
+                if new_rate < 100 or new_rate > 5000:
+                    raise ValueError
+            except ValueError:
+                print("  유효하지 않은 환율값입니다 (100~5000 사이 숫자).")
+                continue
+
+            print(f"\n  ⚠ DB에 저장됩니다: EUR/KRW = {new_rate:,.1f}원 ({today_ym})")
+            if input("  계속할까요? (y/n): ").strip().lower() != "y":
+                print("  취소되었습니다.")
+                continue
+
+            try:
+                client = get_client()
+                # 같은 달 데이터가 있으면 update, 없으면 insert (upsert)
+                client.table("currency_rates").upsert({
+                    "currency_code": "EUR",
+                    "exchange_rate": new_rate,
+                    "base_currency": "KRW",
+                    "update_date":   today_str,
+                }, on_conflict="currency_code,update_date").execute()
+                print(f"  ✓ 저장 완료: EUR/KRW = {new_rate:,.1f}원 ({today_str})")
+            except Exception as e:
+                print(f"  ✗ 저장 실패: {e}")
 
 
-# ── 메뉴 ④ 환율 저점 시기 확인 (읽기전용) ────────────────────────────────────
-
-def action_rate_forecast_detail():
-    """환율 계절 저점 분석 및 구매 시기 권고 상세 출력."""
-    from functions.csc03.fn_rate_forecast import predict_low_rate_dates
-    fc = predict_low_rate_dates()
-    if not fc:
-        print("  환율 데이터를 불러올 수 없습니다.")
-        return
-
-    print("\n  [EUR/KRW 계절적 저점 분석]")
-    print(f"  현재 환율   : {fc.get('current_rate'):,.1f}원")
-    print(f"  최근 6개월 추세: {fc.get('trend_per_month', 0):+.1f}원/월  "
-          f"({'상승세' if fc.get('trend_per_month', 0) > 2 else '하락세' if fc.get('trend_per_month', 0) < -2 else '보합세'})")
-    print()
-    print(f"  ▶ 하반기 저점 예상: {fc.get('h2_low_date')}  ({fc.get('h2_low_rate'):,.1f}원)")
-    print(f"    → 7월 전후가 하반기 중 EUR/KRW 가장 낮은 시기")
-    print(f"       이 시점까지 구매 여유 있는 부품은 7월에 구매 유리")
-    print()
-    print(f"  ▶ 상반기 저점 예상: {fc.get('h1_low_date')}  ({fc.get('h1_low_rate'):,.1f}원)")
-    print(f"    → 매년 1월이 상반기 중 EUR/KRW 가장 낮은 시기")
-    print(f"       급하지 않은 부품은 내년 1월 저점 활용 권고")
-    print()
-    print(f"  참고: {fc.get('note')}")
-    print()
-    print("  [구매 시기 판단 기준]")
-    print("  긴급구매필요   → 발주 기준일 도래 — 즉시 발주 필요")
-    print("  하반기구매필요 → 가장 가까운 저점이 7월(H2) — 7월 전 구매 권고")
-    print("  상반기구매예정 → 여유 있음, 내년 1월(H1) 저점 시기 활용 가능")
-
-
-# ── 메뉴 ⑤ 비행시간 입력 (DB 변경) ─────────────────────────────────────────
+# ── 메뉴 ③ 비행시간 입력 (DB 변경) ─────────────────────────────────────────
 
 def action_flight_hours(aircraft_id: int):
     today_str = date.today().isoformat()
@@ -382,14 +415,13 @@ def main():
 
         while True:
             menu = [
-                {"key": "inquiry",       "label": "재고 / BOM / 필요부품 조회             (읽기전용, 안전)"},
-                {"key": "forecast",      "label": "구매시기 예측 (fn18)                   (읽기전용, 안전)"},
-                {"key": "rate_info",     "label": "환율 현황 (EUR/KRW 최근 6개월)          (읽기전용, 안전)"},
-                {"key": "rate_forecast", "label": "환율 저점 시기 확인                      (읽기전용, 안전)"},
-                {"key": "flight",        "label": "비행시간 입력                           (DB 변경)"},
-                {"key": "complete",      "label": "정비이력 등록 (출고+스케줄완료+D-Time+알람) (DB 변경)"},
-                {"key": "switch",        "label": "다른 기체 선택"},
-                {"key": "quit",          "label": "종료"},
+                {"key": "inquiry",  "label": "재고 / BOM / 필요부품 조회             (읽기전용, 안전)"},
+                {"key": "forecast", "label": "구매시기 예측 (fn18)                   (읽기전용, 안전)"},
+                {"key": "rate",     "label": "환율 (현황 조회 / 오늘자 입력)"},
+                {"key": "flight",   "label": "비행시간 입력                           (DB 변경)"},
+                {"key": "complete", "label": "정비이력 등록 (출고+스케줄완료+D-Time+알람) (DB 변경)"},
+                {"key": "switch",   "label": "다른 기체 선택"},
+                {"key": "quit",     "label": "종료"},
             ]
             choice = pick(menu, "\n작업 선택")
             if choice is None or choice["key"] == "quit":
@@ -399,10 +431,8 @@ def main():
                 action_inquiry(aircraft_id)
             elif choice["key"] == "forecast":
                 action_forecast(aircraft_id)
-            elif choice["key"] == "rate_info":
-                action_rate_info()
-            elif choice["key"] == "rate_forecast":
-                action_rate_forecast_detail()
+            elif choice["key"] == "rate":
+                action_rate_submenu()
             elif choice["key"] == "flight":
                 action_flight_hours(aircraft_id)
                 ac = show_aircraft_summary(aircraft_id)
