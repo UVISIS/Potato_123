@@ -193,18 +193,23 @@ def action_forecast(aircraft_id: int):
         print(f"\n  [환율 저점 예측]  현재 {cur}원  |  추세 {trnd:+.1f}원/월")
         print(f"  하반기 저점 예상: {h2d} ({h2r}원)  |  상반기 저점 예상: {h1d} ({h1r}원)")
 
-    # 정비유형 기준으로 중복 제거 — 같은 유형의 BOM 부품이 여러 행이어도 1행으로 표시
-    # schedule_count(스케줄 중복 수) + 부품 수를 합산하여 ×N 표기
+    # 정비유형 기준으로 중복 제거
+    # lead_time_days: 같은 유형 부품 중 최대값(가장 늦게 도착하는 부품 기준)
     seen: dict[str, dict] = {}
     for f in items:
         mt = str(f.get("maintenance_type", ""))
+        lt = f.get("lead_time_days") or 30
         if mt not in seen:
-            seen[mt] = {**f, "_part_count": 1}
+            seen[mt] = {**f, "_part_count": 1, "_max_lead": lt}
         else:
             seen[mt]["_part_count"] += 1
-            # 더 이른 발주 기준일로 갱신
+            seen[mt]["_max_lead"] = max(seen[mt]["_max_lead"], lt)
             if f.get("order_by_date", "") < seen[mt].get("order_by_date", ""):
-                seen[mt].update({k: v for k, v in f.items() if k != "_part_count"})
+                prev_count = seen[mt]["_part_count"]
+                prev_lead  = seen[mt]["_max_lead"]
+                seen[mt].update({k: v for k, v in f.items() if k not in ("_part_count", "_max_lead")})
+                seen[mt]["_part_count"] = prev_count
+                seen[mt]["_max_lead"]   = prev_lead
     grouped = list(seen.values())
 
     # 시기별 예상 환율 매핑
@@ -222,7 +227,7 @@ def action_forecast(aircraft_id: int):
         mt = str(f.get("maintenance_type", ""))
         # ×N = 부품 입고(리드타임)까지 해당 주기 도래 횟수
         interval  = float(f.get("interval_hours") or 0)
-        lead_days = float(f.get("lead_time_days") or 30)
+        lead_days = float(f.get("_max_lead") or f.get("lead_time_days") or 30)
         if interval > 0 and hpd > 0:
             n = max(1, math.ceil(lead_days * hpd / interval))
         else:
