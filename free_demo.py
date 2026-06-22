@@ -234,13 +234,7 @@ def action_forecast(aircraft_id: int):
             n = math.floor(half_year_hours / interval)
         else:
             n = 0
-        if n >= 2:
-            mt_label = f"{mt} x{n}"
-        elif n == 0:
-            mt_label = f"{mt} (-)"
-        else:
-            mt_label = mt
-        mt_label = mt_label[:25]
+        mt_label = (f"{mt} x{n}" if n >= 2 else mt)[:25]
         due  = str(f.get("due_date", ""))[:10]
         rtag = str(f.get("rate_timing", "-"))
         rate = rate_by_tag.get(rtag)
