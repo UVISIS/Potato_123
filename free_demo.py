@@ -206,8 +206,15 @@ def action_forecast(aircraft_id: int):
                 seen[mt].update({k: v for k, v in f.items() if k != "_part_count"})
     grouped = list(seen.values())
 
-    print(f"\n  {'정비유형':<26s}  {'도래예상일':<11s}  {'권고':<10s}  {'환율'}")
-    print("  " + "-" * 65)
+    # 시기별 예상 환율 매핑
+    rate_by_tag = {
+        "긴급":   rf.get("current_rate"),
+        "하반기": rf.get("h2_low_rate"),
+        "상반기": rf.get("h1_low_rate"),
+    }
+
+    print(f"\n  {'정비유형':<26s}  {'도래예상일':<11s}  {'권고':<6s}  {'예상환율'}")
+    print("  " + "-" * 62)
     for f in grouped:
         sched_cnt = f.get("schedule_count", 1)
         part_cnt  = f.get("_part_count", 1)
@@ -215,9 +222,10 @@ def action_forecast(aircraft_id: int):
         mt = str(f.get("maintenance_type", ""))
         mt_label = (f"{mt} x{n}" if n > 1 else mt)[:25]
         due  = str(f.get("due_date", ""))[:10]
-        rec  = str(f.get("recommendation", ""))[:9]
         rtag = str(f.get("rate_timing", "-"))
-        print(f"  {mt_label:<26s}  {due:<11s}  {rec:<10s}  {rtag}")
+        rate = rate_by_tag.get(rtag)
+        rate_str = f"{rate:,.0f}원" if rate else "-"
+        print(f"  {mt_label:<26s}  {due:<11s}  {rtag:<6s}  {rate_str}")
     print(f"\n  총 {len(grouped)}건  (부품 {len(items)}종)")
 
 
