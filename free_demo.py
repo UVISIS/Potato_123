@@ -18,6 +18,7 @@ DB 변경 / 원상복구:
 """
 
 import sys
+import math
 from datetime import date
 
 import requests
@@ -213,13 +214,19 @@ def action_forecast(aircraft_id: int):
         "상반기": rf.get("h1_low_rate"),
     }
 
+    hpd = result.get("hours_per_calendar_day", 800 / 365) if isinstance(result, dict) else 800 / 365
+
     print(f"\n  {'정비유형':<26s}  {'도래예상일':<11s}  {'권고':<6s}  {'예상환율'}")
     print("  " + "-" * 62)
     for f in grouped:
-        sched_cnt = f.get("schedule_count", 1)
-        part_cnt  = f.get("_part_count", 1)
-        n = max(sched_cnt, part_cnt)
         mt = str(f.get("maintenance_type", ""))
+        # ×N = 부품 입고(리드타임)까지 해당 주기 도래 횟수
+        interval  = float(f.get("interval_hours") or 0)
+        lead_days = float(f.get("lead_time_days") or 30)
+        if interval > 0 and hpd > 0:
+            n = max(1, math.ceil(lead_days * hpd / interval))
+        else:
+            n = 1
         mt_label = (f"{mt} x{n}" if n > 1 else mt)[:25]
         due  = str(f.get("due_date", ""))[:10]
         rtag = str(f.get("rate_timing", "-"))
