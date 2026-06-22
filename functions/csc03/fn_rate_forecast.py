@@ -151,6 +151,6 @@ def rate_timing_tag(order_by_date: str, forecast: dict, today: date | None = Non
     nearest_key, nearest = min(low_dates, key=lambda x: abs((x[1] - obd).days))
 
     if nearest_key == "h2_low_date":
-        return f"H2저점전({nearest.strftime('%m/%d')})"
+        return "하반기"
     else:
-        return f"H1저점후({nearest.strftime('%m/%d')})"
+        return "상반기"
