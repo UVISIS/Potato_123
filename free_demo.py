@@ -176,7 +176,8 @@ def action_forecast(aircraft_id: int):
         annual = 800.0
         print(f"  ▶ 연간 비행시간: {annual}h/년 (함대 기준값 — 제조연도 미등록)")
 
-    result = get(f"/procurement/forecast/{aircraft_id}", annual_flight_hours=annual)
+    # horizon_days=9999 → 모든 정비유형 반환 (반기별 도래 횟수 표시용)
+    result = get(f"/procurement/forecast/{aircraft_id}", annual_flight_hours=annual, horizon_days=9999)
     if not result:
         return
     items = result if isinstance(result, list) else result.get("forecasts") or result.get("items") or [result]
@@ -226,13 +227,20 @@ def action_forecast(aircraft_id: int):
     for f in grouped:
         mt = str(f.get("maintenance_type", ""))
         # ×N = 부품 입고(리드타임)까지 해당 주기 도래 횟수
-        interval  = float(f.get("interval_hours") or 0)
-        lead_days = float(f.get("_max_lead") or f.get("lead_time_days") or 30)
-        if interval > 0 and hpd > 0:
-            n = max(1, math.ceil(lead_days * hpd / interval))
+        interval = float(f.get("interval_hours") or 0)
+        # ×N = 해당 반기(182일) 동안 이 정비가 몇 번 이루어지는지
+        half_year_hours = 182 * hpd
+        if interval > 0:
+            n = math.floor(half_year_hours / interval)
         else:
-            n = 1
-        mt_label = (f"{mt} x{n}" if n > 1 else mt)[:25]
+            n = 0
+        if n >= 2:
+            mt_label = f"{mt} x{n}"
+        elif n == 0:
+            mt_label = f"{mt} (-)"
+        else:
+            mt_label = mt
+        mt_label = mt_label[:25]
         due  = str(f.get("due_date", ""))[:10]
         rtag = str(f.get("rate_timing", "-"))
         rate = rate_by_tag.get(rtag)
