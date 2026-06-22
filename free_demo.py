@@ -218,7 +218,15 @@ def action_forecast(aircraft_id: int):
         "긴급":   rf.get("current_rate"),
         "하반기": rf.get("h2_low_rate"),
         "상반기": rf.get("h1_low_rate"),
+        "여유":   None,
     }
+
+    # 다음 반기 말일 계산 (오늘 기준)
+    today_d = date.today()
+    if today_d.month <= 6:  # 상반기 → 다음 반기 = H2, 말일 = 12/31
+        next_half_end = date(today_d.year, 12, 31)
+    else:                   # 하반기 → 다음 반기 = 내년 H1, 말일 = 6/30
+        next_half_end = date(today_d.year + 1, 6, 30)
 
     hpd = result.get("hours_per_calendar_day", 800 / 365) if isinstance(result, dict) else 800 / 365
 
@@ -239,7 +247,12 @@ def action_forecast(aircraft_id: int):
             continue
         mt_label = (f"{mt} x{n}" if n >= 2 else mt)[:25]
         due  = str(f.get("due_date", ""))[:10]
-        rtag = str(f.get("rate_timing", "-"))
+        # 도래 예상일이 다음 반기를 넘으면 여유
+        try:
+            due_d = date.fromisoformat(due)
+            rtag = "여유" if due_d > next_half_end else str(f.get("rate_timing", "-"))
+        except ValueError:
+            rtag = str(f.get("rate_timing", "-"))
         rate = rate_by_tag.get(rtag)
         rate_str = f"{rate:,.0f}원" if rate else "-"
         print(f"  {mt_label:<26s}  {due:<11s}  {rtag:<6s}  {rate_str}")
