@@ -4,7 +4,7 @@ from functions.csc01.fn1_get_aircraft_info import get_aircraft_info
 
 FN1_KEYS = {
     "aircraft_id", "registration", "model", "category", "status",
-    "serial_number", "manufacture_year", "total_flight_hours",
+    "serial_number", "manufacture_year", "location", "total_flight_hours",
     "accumulated_hours", "last_inspection_date", "active_schedule_count",
     "recent_flights",
 }

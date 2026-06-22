@@ -150,22 +150,16 @@ def forecast_purchase_timing(
     all_bom = (
         client.table("bom")
         .select("part_id, required_qty, aircraft_model, maintenance_type")
-        .in_("aircraft_model", [model_norm, "null"])
         .execute()
     ).data or []
-    # aircraft_model이 NULL인 행도 포함 (전기종 공통 BOM)
-    all_bom += (
-        client.table("bom")
-        .select("part_id, required_qty, aircraft_model, maintenance_type")
-        .is_("aircraft_model", "null")
-        .execute()
-    ).data or []
-    # 중복 제거 후 기종 필터
-    seen_bom: set[tuple] = set()
+    # 기종 일치 또는 전기종(NULL) 필터
     bom_filtered: list[dict] = []
+    seen_bom: set[tuple] = set()
     for b in all_bom:
+        if b.get("aircraft_model") not in (None, model_norm):
+            continue
         key = (b.get("maintenance_type"), b.get("part_id"), b.get("aircraft_model"))
-        if key not in seen_bom and b.get("aircraft_model") in (None, model_norm):
+        if key not in seen_bom:
             seen_bom.add(key)
             bom_filtered.append(b)
     # maintenance_type → [bom_row, ...] 맵

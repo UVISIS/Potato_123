@@ -25,10 +25,10 @@ def _seed(db):
         {"id": 4, "part_number": "BT-4", "nomenclature": "BOLT", "category": "Hardware"},       # DA-40NG+DA-42NG 공통 적용
     ])
     db.seed("component_aircraft", [
-        {"id": 100, "component_id": 1, "aircraft_model": "DA-40NG"},   # DA-40NG 전용
-        {"id": 101, "component_id": 3, "aircraft_model": "DA-42NG"},   # DA-42NG 전용
-        {"id": 102, "component_id": 4, "aircraft_model": "DA-40NG"},   # DA-40NG + DA-42NG
-        {"id": 103, "component_id": 4, "aircraft_model": "DA-42NG"},
+        {"id": 100, "component_id": 1, "aircraft_model": "DA40NG"},   # DA-40NG 전용
+        {"id": 101, "component_id": 3, "aircraft_model": "DA42NG"},   # DA-42NG 전용
+        {"id": 102, "component_id": 4, "aircraft_model": "DA40NG"},   # DA-40NG + DA-42NG
+        {"id": 103, "component_id": 4, "aircraft_model": "DA42NG"},
     ])
     db.seed("parts_inventory", [
         {"id": 10, "part_id": 1, "quantity_on_hand": 5, "location": "청주"},

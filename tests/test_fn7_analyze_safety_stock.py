@@ -31,7 +31,7 @@ def test_reorder_points_autolookup(db):
     r = analyze_safety_stock(1, avg_daily_usage=0.0)   # usage 0 → inf
     assert r["safety_stock_source"] == "reorder_points"
     assert r["status"] == "정상"           # 20 > 10*1.5
-    assert r["days_until_stockout"] == float("inf")
+    assert r["days_until_stockout"] is None  # usage=0 → JSON 직렬화상 None
 
 
 def test_no_safety_source_raises(db):

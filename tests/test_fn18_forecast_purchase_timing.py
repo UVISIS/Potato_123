@@ -4,7 +4,8 @@ from functions.csc03.fn18_forecast_purchase_timing import forecast_purchase_timi
 
 KEYS = {
     "aircraft_id", "model", "current_flight_hours", "annual_flight_hours",
-    "hours_per_calendar_day", "horizon_days", "as_of", "items", "summary",
+    "hours_per_calendar_day", "horizon_days", "as_of", "rate_forecast",
+    "items", "summary",
 }
 
 
@@ -15,7 +16,7 @@ def _seed(db, due_hours=100):
          "interval_hours": 100, "due_hours": due_hours, "status": "scheduled"},
     ])
     db.seed("bom", [
-        {"id": 1, "maintenance_type": "기체100HRS", "aircraft_model": "DA-42NG",
+        {"id": 1, "maintenance_type": "기체100HRS", "aircraft_model": "DA42NG",
          "part_id": 500, "required_qty": 2},
     ])
     db.seed("components", [{"id": 500, "nomenclature": "OIL FILTER"}])
