@@ -44,9 +44,9 @@ def normalize_mt(mt: str) -> str:
 
 # ── HTTP 유틸 ────────────────────────────────────────────────────────────
 
-def get(path: str, **params):
+def get(path: str, _timeout: int = 10, **params):
     try:
-        r = requests.get(f"{BASE}{path}", params=params or None, timeout=10)
+        r = requests.get(f"{BASE}{path}", params=params or None, timeout=_timeout)
     except requests.exceptions.ConnectionError:
         print("  [연결 실패] 서버가 켜져 있는지 확인하세요 (uvicorn main:app --reload)")
         return None
@@ -177,7 +177,7 @@ def action_forecast(aircraft_id: int):
         print(f"  ▶ 연간 비행시간: {annual}h/년 (함대 기준값 — 제조연도 미등록)")
 
     # horizon_days=9999 → 모든 정비유형 반환 (반기별 도래 횟수 표시용)
-    result = get(f"/procurement/forecast/{aircraft_id}", annual_flight_hours=annual, horizon_days=9999)
+    result = get(f"/procurement/forecast/{aircraft_id}", _timeout=120, annual_flight_hours=annual, horizon_days=9999)
     if not result:
         return
     items = result if isinstance(result, list) else result.get("forecasts") or result.get("items") or [result]

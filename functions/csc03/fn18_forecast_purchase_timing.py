@@ -146,73 +146,100 @@ def forecast_purchase_timing(
             earliest[mt] = {**s, "_remaining": rem}
     scheds = list(earliest.values())
 
+    # ── 일괄 사전 조회 (N+1 방지) ─────────────────────────────────────
+    all_bom = (
+        client.table("bom")
+        .select("part_id, required_qty, aircraft_model, maintenance_type")
+        .in_("aircraft_model", [model_norm, "null"])
+        .execute()
+    ).data or []
+    # aircraft_model이 NULL인 행도 포함 (전기종 공통 BOM)
+    all_bom += (
+        client.table("bom")
+        .select("part_id, required_qty, aircraft_model, maintenance_type")
+        .is_("aircraft_model", "null")
+        .execute()
+    ).data or []
+    # 중복 제거 후 기종 필터
+    seen_bom: set[tuple] = set()
+    bom_filtered: list[dict] = []
+    for b in all_bom:
+        key = (b.get("maintenance_type"), b.get("part_id"), b.get("aircraft_model"))
+        if key not in seen_bom and b.get("aircraft_model") in (None, model_norm):
+            seen_bom.add(key)
+            bom_filtered.append(b)
+    # maintenance_type → [bom_row, ...] 맵
+    bom_map: dict[str, list[dict]] = {}
+    for b in bom_filtered:
+        bom_map.setdefault(b["maintenance_type"], []).append(b)
+
+    # 관련 part_id 전체 수집
+    all_part_ids = list({b["part_id"] for b in bom_filtered})
+
+    # 재고 일괄 조회
+    inv_rows = (
+        client.table("parts_inventory")
+        .select("part_id, quantity_on_hand")
+        .in_("part_id", all_part_ids or [0])
+        .execute()
+    ).data or []
+    stock_map: dict[int, int] = {}
+    for r in inv_rows:
+        pid = r["part_id"]
+        stock_map[pid] = stock_map.get(pid, 0) + int(r.get("quantity_on_hand") or 0)
+
+    # 리드타임 일괄 조회
+    rp_rows = (
+        client.table("reorder_points")
+        .select("part_id, lead_time_days")
+        .in_("part_id", all_part_ids or [0])
+        .execute()
+    ).data or []
+    lead_map: dict[int, int] = {}
+    for r in rp_rows:
+        lt = r.get("lead_time_days")
+        if lt:
+            lead_map[r["part_id"]] = int(lt)
+
+    # 품명 일괄 조회
+    comp_rows = (
+        client.table("components")
+        .select("id, nomenclature")
+        .in_("id", all_part_ids or [0])
+        .execute()
+    ).data or []
+    nomenclature_map: dict[int, str] = {r["id"]: r.get("nomenclature") for r in comp_rows}
+    # ─────────────────────────────────────────────────────────────────
+
     items: list[dict] = []
 
     for s in scheds:
         interval_hours = s.get("interval_hours")
         if not interval_hours or float(interval_hours) <= 0:
-            continue  # 순수 날짜기반 주기는 시간환산 대상 아님(별도 처리 영역)
+            continue
 
         due_hours = s.get("due_hours")
         if due_hours is not None:
             remaining_hours = float(due_hours) - current_hours
         else:
-            remaining_hours = float(interval_hours)  # 신규: 한 주기분 남은 것으로 가정
+            remaining_hours = float(interval_hours)
 
         days_until_due = math.ceil(remaining_hours / hours_per_day)
         due_date = today_d + timedelta(days=days_until_due)
 
-        # 예측 기간 밖(여유 많음)은 스킵 — 단, 초과/임박은 항상 포함
         if days_until_due > horizon_days:
             continue
 
-        # ── 해당 정비의 BOM 부품
-        bom_rows = (
-            client.table("bom")
-            .select("part_id, required_qty, aircraft_model, maintenance_type")
-            .eq("maintenance_type", normalize_maintenance_type(s["maintenance_type"]))
-            .execute()
-        ).data or []
-        # 기종 일치 또는 전기종(null) 만
-        bom_rows = [
-            b for b in bom_rows
-            if b.get("aircraft_model") in (None, model_norm)
-        ]
+        # BOM 부품 (사전 조회 맵 사용)
+        mt_norm = normalize_maintenance_type(s["maintenance_type"])
+        bom_rows = bom_map.get(mt_norm, [])
 
         for b in bom_rows:
-            part_id = b["part_id"]
+            part_id      = b["part_id"]
             required_qty = int(b.get("required_qty") or 1)
-
-            # 현재고 (중앙 단일행 가정이나 분리행도 합산 대응)
-            inv = (
-                client.table("parts_inventory")
-                .select("quantity_on_hand")
-                .eq("part_id", part_id)
-                .execute()
-            ).data or []
-            current_stock = sum(int(r.get("quantity_on_hand") or 0) for r in inv)
-
-            # 리드타임 / 품명
-            rp = (
-                client.table("reorder_points")
-                .select("lead_time_days")
-                .eq("part_id", part_id)
-                .maybe_single()
-                .execute()
-            )
-            lead_time = default_lead_time_days
-            # lead_time_days=0 은 미설정과 동일하게 처리 (0일 리드타임은 의미 없음)
-            if rp and rp.data and rp.data.get("lead_time_days"):
-                lead_time = int(rp.data["lead_time_days"])
-
-            comp = (
-                client.table("components")
-                .select("nomenclature")
-                .eq("id", part_id)
-                .maybe_single()
-                .execute()
-            )
-            nomenclature = comp.data.get("nomenclature") if (comp and comp.data) else None
+            current_stock = stock_map.get(part_id, 0)
+            lead_time     = lead_map.get(part_id, default_lead_time_days)
+            nomenclature  = nomenclature_map.get(part_id)
 
             order_by_date = due_date - timedelta(days=lead_time)
             shortfall = max(0, required_qty - current_stock)
