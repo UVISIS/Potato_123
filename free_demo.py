@@ -227,11 +227,13 @@ def action_forecast(aircraft_id: int):
     for f in grouped:
         mt = str(f.get("maintenance_type", ""))
         # ×N = 부품 입고(리드타임)까지 해당 주기 도래 횟수
-        interval = float(f.get("interval_hours") or 0)
-        # ×N = 해당 반기(182일) 동안 이 정비가 몇 번 이루어지는지
+        interval  = float(f.get("interval_hours") or 0)
+        remaining = float(f.get("remaining_hours") or interval)
+        # ×N = 해당 반기(182일) 동안 이 정비가 몇 번 도래하는지
+        # 잔여시간이 반기 안에 들어오면 1회 + 그 이후 반기 끝까지 추가 도래 횟수
         half_year_hours = 182 * hpd
-        if interval > 0:
-            n = math.floor(half_year_hours / interval)
+        if interval > 0 and remaining <= half_year_hours:
+            n = 1 + math.floor((half_year_hours - remaining) / interval)
         else:
             n = 0
         if n == 0:
