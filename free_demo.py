@@ -206,19 +206,19 @@ def action_forecast(aircraft_id: int):
                 seen[mt].update({k: v for k, v in f.items() if k != "_part_count"})
     grouped = list(seen.values())
 
-    print(f"\n  {'정비유형':<30s}  {'도래 예상일':<12s}  {'발주 시작일':<12s}  {'권고':<12s}  {'환율 시기'}")
-    print("  " + "-" * 90)
+    print(f"\n  {'정비유형':<24s}  {'도래예상일':<11s}  {'발주시작일':<11s}  {'권고':<10s}  {'환율'}")
+    print("  " + "-" * 78)
     for f in grouped:
-        sched_cnt = f.get("schedule_count", 1)   # 동일 정비유형 스케줄 수
-        part_cnt  = f.get("_part_count", 1)       # 해당 유형 BOM 부품 수
+        sched_cnt = f.get("schedule_count", 1)
+        part_cnt  = f.get("_part_count", 1)
         n = max(sched_cnt, part_cnt)
         mt = str(f.get("maintenance_type", ""))
-        mt_label = (f"{mt} ×{n}" if n > 1 else mt)[:29]
-        due  = str(f.get("due_date", ""))[:11]
-        obd  = str(f.get("order_by_date", ""))[:11]
-        rec  = str(f.get("recommendation", ""))[:11]
+        mt_label = (f"{mt} x{n}" if n > 1 else mt)[:23]
+        due  = str(f.get("due_date", ""))[:10]
+        obd  = str(f.get("order_by_date", ""))[:10]
+        rec  = str(f.get("recommendation", ""))[:9]
         rtag = str(f.get("rate_timing", "-"))
-        print(f"  {mt_label:<30s}  {due:<12s}  {obd:<12s}  {rec:<12s}  {rtag}")
+        print(f"  {mt_label:<24s}  {due:<11s}  {obd:<11s}  {rec:<10s}  {rtag}")
     print(f"\n  총 {len(grouped)}건  (부품 {len(items)}종)")
 
 

@@ -201,7 +201,8 @@ def forecast_purchase_timing(
                 .execute()
             )
             lead_time = default_lead_time_days
-            if rp and rp.data and rp.data.get("lead_time_days") is not None:
+            # lead_time_days=0 은 미설정과 동일하게 처리 (0일 리드타임은 의미 없음)
+            if rp and rp.data and rp.data.get("lead_time_days"):
                 lead_time = int(rp.data["lead_time_days"])
 
             comp = (

@@ -138,7 +138,7 @@ def rate_timing_tag(order_by_date: str, forecast: dict, today: date | None = Non
 
     # 발주 기준일이 오늘 이하면 긴급
     if obd <= today:
-        return "긴급구매필요"
+        return "긴급"
 
     # 가장 가까운 저점 선택
     low_dates = []
@@ -151,6 +151,6 @@ def rate_timing_tag(order_by_date: str, forecast: dict, today: date | None = Non
     nearest_key, nearest = min(low_dates, key=lambda x: abs((x[1] - obd).days))
 
     if nearest_key == "h2_low_date":
-        return f"하반기구매필요({nearest.strftime('%m월')}저점)"
+        return f"H2저점전({nearest.strftime('%m/%d')})"
     else:
-        return f"상반기구매예정({nearest.strftime('%m월')}저점)"
+        return f"H1저점후({nearest.strftime('%m/%d')})"
