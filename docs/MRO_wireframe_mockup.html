@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MRO 시스템 · UI 목업</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#EEF0F4;
+  --navy:#0B1220;
+  --navy-2:#141D30;
+  --sidebar-line:#22304A;
+  --accent:#2F6FF0;
+  --accent-soft:#E8EFFE;
+  --figma-purple:#8B5CF6;
+  --surface:#FFFFFF;
+  --border:#E3E7EE;
+  --text:#101826;
+  --text-soft:#5B6472;
+  --text-faint:#94A0B2;
+  --danger:#E5484D;
+  --danger-bg:#FDECEC;
+  --warn:#F5A524;
+  --warn-bg:#FEF3DE;
+  --ok:#12A150;
+  --ok-bg:#E7F8EE;
+  --radius:10px;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',-apple-system,sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--canvas);font-family:var(--sans);color:var(--text);}
+
+/* ===== TOP CHROME (Figma-style top bar) ===== */
+.chrome{
+  position:sticky;top:0;z-index:50;
+  background:#1B1F27;color:#fff;
+  display:flex;align-items:center;gap:14px;
+  padding:10px 18px;font-size:13px;
+}
+.chrome .file-name{font-weight:600;display:flex;align-items:center;gap:8px;}
+.chrome .file-name .dot{width:8px;height:8px;border-radius:50%;background:var(--figma-purple);}
+.chrome .modeswitch{margin-left:auto;display:flex;background:#2A2F3A;border-radius:8px;padding:3px;gap:2px;}
+.chrome .modeswitch button{
+  border:none;background:transparent;color:#B7BDC9;padding:6px 14px;border-radius:6px;
+  font-family:var(--sans);font-size:12.5px;font-weight:600;cursor:pointer;
+}
+.chrome .modeswitch button.active{background:var(--figma-purple);color:#fff;}
+.chrome .hint{color:#8A90A0;font-size:12px;}
+
+/* ===== CANVAS (zoomed-out Figma board) VIEW ===== */
+.board{
+  padding:56px 48px 120px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(340px,1fr));
+  gap:64px 40px;
+  max-width:1680px;margin:0 auto;
+}
+.frame-wrap{position:relative;}
+.frame-tag{
+  position:absolute;top:-30px;left:0;
+  background:var(--figma-purple);color:#fff;font-size:12px;font-weight:700;
+  padding:4px 10px;border-radius:6px 6px 0 0;
+  font-family:var(--sans);letter-spacing:.2px;
+}
+.frame-tag small{font-weight:500;opacity:.85;margin-left:6px;}
+.frame-thumb{
+  background:var(--surface);border:1px solid var(--border);border-radius:4px;
+  overflow:hidden;transform-origin:top left;
+  box-shadow:0 1px 3px rgba(16,24,38,.06);
+  cursor:pointer;transition:box-shadow .15s, transform .15s;
+  height:230px; position:relative;
+}
+.frame-thumb:hover{box-shadow:0 8px 24px rgba(16,24,38,.14);transform:translateY(-2px);}
+.frame-thumb iframe-sim{display:block;}
+.thumb-scale{
+  width:1440px;height:900px;
+  transform:scale(0.16);transform-origin:top left;
+  pointer-events:none;
+}
+
+/* ===== FOCUS (single page) VIEW ===== */
+.stage{display:none;padding:40px 0 100px;}
+.stage.active{display:flex;justify-content:center;}
+.frame-focus-wrap{position:relative;}
+.frame-focus-tag{
+  position:absolute;top:-32px;left:0;
+  background:var(--figma-purple);color:#fff;font-size:13px;font-weight:700;
+  padding:5px 12px;border-radius:6px 6px 0 0;
+}
+.frame-focus-tag small{font-weight:500;opacity:.85;margin-left:8px;}
+.app{
+  width:1440px;min-height:900px;background:var(--surface);
+  box-shadow:0 2px 40px rgba(16,24,38,.12);
+  display:flex;border:1px solid var(--border);
+}
+.back-btn{
+  position:fixed;top:64px;left:24px;z-index:40;
+  background:#1B1F27;color:#fff;border:none;border-radius:8px;
+  padding:9px 14px;font-family:var(--sans);font-size:12.5px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+
+/* ===== APP SHELL ===== */
+.app-sidebar{
+  width:224px;background:var(--navy);color:#C9D2E3;flex-shrink:0;
+  display:flex;flex-direction:column;
+}
+.app-sidebar .brand{
+  padding:20px 18px;font-weight:800;font-size:15px;color:#fff;
+  border-bottom:1px solid var(--sidebar-line);display:flex;align-items:center;gap:8px;
+}
+.app-sidebar .brand .plane{color:var(--accent);}
+.nav-item{padding:12px 18px;font-size:13px;font-weight:600;color:#8B96AC;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.nav-item.top{padding-top:16px;}
+.nav-group-label{padding:14px 18px 4px;font-size:11px;letter-spacing:.06em;color:#5A6478;font-weight:700;text-transform:uppercase;}
+.nav-sub{padding:10px 18px 10px 34px;font-size:13px;color:#AEB8CB;cursor:pointer;border-left:2px solid transparent;}
+.nav-sub.selected{color:#fff;font-weight:700;border-left:2px solid var(--accent);background:var(--navy-2);}
+.nav-sub:hover{color:#fff;}
+
+.app-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.app-header{
+  height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  padding:0 20px;gap:14px;font-size:12.5px;color:var(--text-soft);flex-shrink:0;
+}
+.app-header .crumb{font-weight:600;color:var(--text);}
+.app-header .crumb span{color:var(--text-faint);font-weight:500;}
+.app-header .icon-btn{margin-left:auto;width:30px;height:30px;border-radius:7px;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;color:var(--text-soft);font-size:14px;}
+.app-body{flex:1;padding:20px 24px;overflow:auto;background:#FAFBFC;}
+
+/* ===== SHARED UI ATOMS ===== */
+.page-title{font-size:18px;font-weight:800;margin:0 0 4px;}
+.page-sub{font-size:12.5px;color:var(--text-soft);margin:0 0 18px;}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.chip-select{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 10px;font-size:12.5px;color:var(--text);font-family:var(--sans);}
+.search-box{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 12px;font-size:12.5px;min-width:200px;color:var(--text-soft);}
+.spacer{flex:1;}
+.btn{border:none;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--sans);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);}
+.btn-danger-outline{background:#fff;border:1px solid var(--danger);color:var(--danger);}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);}
+.grid-2{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{
+  text-align:left;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;
+  padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700;cursor:pointer;white-space:nowrap;
+}
+thead th .arrows{color:#C6CCD7;font-size:9px;margin-left:3px;}
+tbody td{padding:10px 12px;border-bottom:1px solid #F0F2F5;color:var(--text);white-space:nowrap;}
+tbody tr:hover{background:#F7F9FC;cursor:pointer;}
+.mono{font-family:var(--mono);}
+.chk{width:14px;height:14px;border:1.5px solid #C6CCD7;border-radius:4px;display:inline-block;}
+.chk.on{background:var(--accent);border-color:var(--accent);}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-danger{background:var(--danger-bg);color:var(--danger);}
+.badge-warn{background:var(--warn-bg);color:#B4790D;}
+.badge-ok{background:var(--ok-bg);color:var(--ok);}
+.row-danger{background:#FEF6F6;}
+.row-warn{background:#FFFBF2;}
+
+.statusbar{height:6px;border-radius:4px;background:#EEF0F4;overflow:hidden;width:100%;}
+.statusbar > div{height:100%;}
+
+/* gauge (signature avionics element) */
+.gauge-wrap{display:flex;flex-direction:column;gap:4px;}
+.gauge-track{position:relative;height:10px;border-radius:6px;background:#1B2333;overflow:hidden;}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,#2F6FF0,#5B9CFF);}
+.gauge-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-faint);}
+
+.panel-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);
+  padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.panel-body{padding:14px 16px;}
+
+.kpi-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:#fff;}
+.kpi-num{font-family:var(--mono);font-size:26px;font-weight:700;}
+.kpi-label{font-size:11.5px;color:var(--text-soft);margin-top:2px;}
+
+.ac-btn{border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:12.5px;font-weight:700;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;cursor:pointer;background:#fff;}
+.ac-btn.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.ac-dot{width:8px;height:8px;border-radius:50%;}
+
+/* modal */
+.modal-overlay{position:absolute;inset:0;background:rgba(11,18,32,.42);display:none;align-items:center;justify-content:center;z-index:30;}
+.modal-overlay.show{display:flex;}
+.modal{width:420px;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;}
+.modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-head b{font-size:13.5px;}
+.modal-close{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--text-soft);}
+.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow:auto;}
+.field label{display:block;font-size:11.5px;font-weight:700;color:var(--text-soft);margin-bottom:5px;}
+.field input, .field select{width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12.5px;font-family:var(--sans);}
+.field input.disabled{background:#F3F4F6;color:var(--text-faint);}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+.helper{font-size:11px;color:var(--text-faint);}
+.warn-box{background:var(--danger-bg);color:var(--danger);border-radius:7px;padding:8px 10px;font-size:11.5px;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <div class="file-name"><span class="dot"></span> MRO_UIUX_와이어프레임_기능명세 — v2 목업</div>
+  <div class="hint">7개 프레임 · Potato_123</div>
+  <div class="modeswitch">
+    <button id="btn-canvas" class="active" onclick="setMode('canvas')">캔버스 보기</button>
+    <button id="btn-focus" onclick="setMode('focus')">프레임 보기</button>
+  </div>
+</div>
+
+<button class="back-btn" id="backBtn" onclick="setMode('canvas')" style="display:none;">&larr; 캔버스로</button>
+
+<!-- ============ CANVAS (all 7 frames zoomed out) ============ -->
+<div class="board" id="board"></div>
+
+<!-- ============ FOCUS (single frame full size) ============ -->
+<div class="stage" id="stage">
+  <div class="frame-focus-wrap">
+    <div class="frame-focus-tag" id="focusTag">01 · 메인 대시보드 <small>1440 × 900</small></div>
+    <div class="app" id="focusApp"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- SAMPLE DATA (repo/spec 기반) ---------------- */
+const parts = [
+ {pn:'WK724-3', name:'Fuel Filter', cat:'기체', qty:2, safety:3, loc:'무안', cycle:'100H'},
+ {pn:'LN94-40060', name:'Split Pin', cat:'기체', qty:10, safety:5, loc:'청주', cycle:'100H'},
+ {pn:'DIN985-M6-A2', name:'Nut', cat:'기타', qty:30, safety:10, loc:'청주', cycle:'200H'},
+ {pn:'RU-1620', name:'Air Filter', cat:'엔진', qty:6, safety:4, loc:'무안', cycle:'500H'},
+ {pn:'E4A-52-300-KIT', name:"Eng' Oil Filter", cat:'엔진', qty:5, safety:8, loc:'청주', cycle:'100H'},
+ {pn:'MSB085', name:'MSB-E4-043 Kit', cat:'기타', qty:1, safety:1, loc:'무안', cycle:'MSB'},
+ {pn:'HELIX-5W40', name:"Shell HELIX Ultra Eng' Oil", cat:'엔진', qty:3, safety:3, loc:'청주', cycle:'100H'},
+ {pn:'E4A-41-300-803', name:'Ear Clamp', cat:'기체', qty:6, safety:6, loc:'무안', cycle:'200H'},
+ {pn:'SPIRAX-S6', name:'Gear Box Oil', cat:'엔진', qty:4, safety:2, loc:'청주', cycle:'500H'},
+ {pn:'GOV-2400', name:'Governor Assy', cat:'엔진', qty:2, safety:2, loc:'무안', cycle:'2400H'},
+ {pn:'PROP-2600', name:'Propeller Blade Kit', cat:'기타', qty:1, safety:2, loc:'청주', cycle:'2600H'},
+ {pn:'BRK-FLUID', name:'Brake Fluid', cat:'기체', qty:12, safety:6, loc:'무안', cycle:'500H'},
+];
+function statusOf(p){ const r=p.qty/p.safety; if(r<=1) return 'danger'; if(r<=1.5) return 'warn'; return 'ok'; }
+function statusBadge(p){
+  const s=statusOf(p);
+  if(s==='danger') return '<span class="badge badge-danger">● 부족</span>';
+  if(s==='warn') return '<span class="badge badge-warn">● 경고</span>';
+  return '<span class="badge badge-ok">● 정상</span>';
+}
+const aircraft = [
+ {reg:'HL1179', model:'DA-40NG', hours:5237.7, next:'항공기 100HRS', engNext:"ENG' 100HRS", remain:-0.2, engRemain:47, status:'danger', serial:'40.NG471', year:2021, loc:'무안'},
+ {reg:'HL1176', model:'DA-40NG', hours:6011.4, next:'항공기 200HRS', engNext:"ENG' 300HRS", remain:38, engRemain:112, status:'warn', serial:'40.NG221', year:2019, loc:'청주'},
+ {reg:'HL1177', model:'DA-40NG', hours:4120.9, next:'항공기 100HRS', engNext:"ENG' 100HRS", remain:79, engRemain:653, status:'ok', serial:'40.NG233', year:2020, loc:'청주'},
+ {reg:'HL1178', model:'DA-40NG', hours:3980.2, next:'항공기 500HRS', engNext:"ENG' 200HRS", remain:19, engRemain:8, status:'danger', serial:'40.NG240', year:2020, loc:'무안'},
+ {reg:'HL1252', model:'DA-40NG', hours:2214.5, next:'항공기 100HRS', engNext:"ENG' 100HRS", remain:145, engRemain:288, status:'ok', serial:'40.NG512', year:2023, loc:'청주'},
+ {reg:'HL1295', model:'DA-40NG', hours:988.3, next:'항공기 100HRS', engNext:"ENG' 100HRS", remain:12, engRemain:412, status:'warn', serial:'40.NG601', year:2024, loc:'무안'},
+ {reg:'HL2046', model:'DA-42NG', hours:2059.4, next:'항공기 100HRS', engNext:"ENG' 100HRS", remain:22, engRemain:653, status:'warn', serial:'42.NG046', year:2022, loc:'청주'},
+];
+let selectedAC = aircraft[0];
+
+const frames = [
+ {id:'dash', tag:'01 · 메인 대시보드'},
+ {id:'parts', tag:'02 · 부품 관리'},
+ {id:'io', tag:'03 · 입출고 관리'},
+ {id:'safety', tag:'04 · 안전재고 관리'},
+ {id:'ac', tag:'05 · 기체 관리'},
+ {id:'hist', tag:'06 · 정비 이력'},
+ {id:'status', tag:'07 · 주기정비 현황 (조회 전용)'},
+ {id:'proc', tag:'08 · 발주/구매관리', proposed:true},
+];
+
+/* ---------------- SHELL BUILDER ---------------- */
+function sidebar(activeId){
+  const groups = [
+    {label:null, items:[{id:'dash', label:'메인 대시보드'}]},
+    {label:'재고관리', items:[{id:'parts', label:'부품 관리'},{id:'io', label:'입출고 관리'},{id:'safety', label:'안전재고 관리'},{id:'proc', label:'발주 관리 (제안)'}]},
+    {label:'항공기관리', items:[{id:'ac', label:'기체 관리'},{id:'hist', label:'정비 이력'},{id:'status', label:'주기정비 현황'}]},
+  ];
+  let html = `<div class="app-sidebar"><div class="brand"><span class="plane">&#9992;</span> MRO System</div>`;
+  groups.forEach(g=>{
+    if(g.label) html += `<div class="nav-group-label">${g.label}</div>`;
+    g.items.forEach(it=>{
+      html += `<div class="nav-sub ${it.id===activeId?'selected':''}" onclick="gotoFrame('${it.id}')">${it.label}</div>`;
+    });
+  });
+  html += `</div>`;
+  return html;
+}
+function header(crumb){
+  return `<div class="app-header">
+    <div class="crumb">메인화면 <span>/ 메뉴 &gt; ${crumb}</span></div>
+    <div class="icon-btn" title="새로고침">&#8635;</div>
+    <div class="icon-btn" title="홈">&#8962;</div>
+    <div class="icon-btn" title="사이드바">&#9776;</div>
+  </div>`;
+}
+function shell(activeId, crumb, bodyHtml, modalHtml){
+  return `<div style="display:flex;width:100%;position:relative;">
+    ${sidebar(activeId)}
+    <div class="app-main">${header(crumb)}<div class="app-body">${bodyHtml}</div></div>
+    ${modalHtml||''}
+  </div>`;
+}
+
+/* ---------------- PAGE 1: 메인 대시보드 ---------------- */
+function pageDash(){
+  const rows = parts.map(p=>`<tr>
+    <td><span class="chk"></span></td>
+    <td class="mono">${p.pn}</td><td>${p.name}</td>
+    <td class="mono">${p.qty}</td><td class="mono">${p.safety}</td><td>${p.loc}</td><td>${p.cycle}</td>
+  </tr>`).join('');
+  const acList = aircraft.map(a=>`<div class="ac-btn ${a.reg===selectedAC.reg?'sel':''}">
+    <span>${a.reg}</span><span class="ac-dot" style="background:${dotColor(a.status)}"></span></div>`).join('');
+  const shortage = parts.filter(p=>statusOf(p)!=='ok').map(p=>`<tr>
+    <td class="mono">${p.pn}</td><td>${p.name}</td><td class="mono">${p.qty}</td><td>${p.loc}</td></tr>`).join('');
+
+  const body = `
+    <div class="page-title">메인 대시보드</div>
+    <div class="page-sub">기체별 주기정비 현황 + 재고 통합 뷰</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="toolbar" style="padding:14px 16px 0;">
+          <select class="chip-select"><option>전체 ▾</option><option>기체</option><option>엔진</option><option>기타</option></select>
+          <input class="search-box" placeholder="부품번호 또는 부품명칭 검색">
+        </div>
+        <div style="padding:14px 16px;">
+        <table><thead><tr>
+          <th></th><th>부품번호<span class="arrows">▲▼</span></th><th>부품명칭</th><th>재고수량</th><th>안전재고</th><th>위치</th><th>주기</th>
+        </tr></thead><tbody>${rows}</tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="panel-title">항공기 선택</div>
+          <div class="panel-body">${acList}</div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>${selectedAC.reg} · ${selectedAC.model}</span>
+            <span style="display:flex;gap:2px;background:#F0F2F5;border-radius:6px;padding:2px;">
+              <span onclick="setGaugeTab('ac')" class="mono" style="font-size:10.5px;padding:3px 8px;border-radius:5px;cursor:pointer;${gaugeTab==='ac'?'background:#fff;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08);':'color:var(--text-faint);'}">기체</span>
+              <span onclick="setGaugeTab('eng')" class="mono" style="font-size:10.5px;padding:3px 8px;border-radius:5px;cursor:pointer;${gaugeTab==='eng'?'background:#fff;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08);':'color:var(--text-faint);'}">엔진</span>
+            </span>
+          </div>
+          <div class="panel-body">
+            <div style="font-size:11.5px;color:var(--text-soft);margin-bottom:8px;">누적 비행시간 <b class="mono" style="color:var(--text);font-size:13px;">${selectedAC.hours}h</b></div>
+            <div class="gauge-wrap">
+              <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span>${gaugeTab==='ac'?selectedAC.next:selectedAC.engNext}</span><b class="mono">${gaugeTab==='ac'?selectedAC.remain:selectedAC.engRemain}h</b></div>
+              <div class="gauge-track"><div class="gauge-fill" style="width:${gaugePct(gaugeTab==='ac'?selectedAC.remain:selectedAC.engRemain)}%;background:${(gaugeTab==='ac'?selectedAC.remain:selectedAC.engRemain)<0?'#E5484D':'linear-gradient(90deg,#2F6FF0,#5B9CFF)'}"></div></div>
+              <div class="gauge-ticks"><span>0</span><span>${gaugeTab==='ac'?'200H':'1000H'}</span></div>
+            </div>
+            <div style="margin-top:10px;font-size:11.5px;color:var(--text-soft);">MSB 잔여 상태 &nbsp;<b class="mono" style="color:var(--text);">450 DAY</b></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="panel-title">재고 부족 부품</div>
+          <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>위치</th></tr></thead><tbody>${shortage}</tbody></table>
+        </div>
+      </div>
+    </div>`;
+  return shell('dash','메인 대시보드', body);
+}
+function dotColor(s){return s==='danger'?'#E5484D':(s==='warn'?'#F5A524':'#12A150');}
+function gaugePct(remain){ if(remain<0) return 100; const max=remain>200?1000:200; return Math.min(100, Math.round((1-remain/max)*100)); }
+let gaugeTab='ac';
+let currentFrame='dash', currentMode='canvas';
+function rerenderCurrent(){
+  if(currentMode==='focus'){ document.getElementById('focusApp').innerHTML = pageFns[currentFrame](); }
+  else { buildBoard(); }
+}
+function setGaugeTab(t){ gaugeTab=t; rerenderCurrent(); }
+
+/* ---------------- PAGE 2: 부품 관리 ---------------- */
+function pageParts(){
+  const rows = parts.map(p=>`<tr onclick="openModal('partEdit')">
+    <td><span class="chk"></span></td><td class="mono">${p.pn}</td><td>${p.name}</td>
+    <td class="mono">${p.qty}</td><td class="mono">${p.safety}</td><td>${p.loc}</td><td>${p.cat==='기체'?'DA-40NG':'DA-42NG'}</td>
+  </tr>`).join('');
+  const body = `
+    <div class="page-title">부품 관리</div>
+    <div class="page-sub">전체 부품 목록 조회 / 신규 등록 / 정보 수정</div>
+    <div class="card">
+      <div class="toolbar" style="padding:14px 16px 0;">
+        <select class="chip-select"><option>전체 ▾</option><option>기체</option><option>엔진</option><option>기타</option></select>
+        <input class="search-box" placeholder="부품번호 · 부품명칭 검색">
+        <div class="spacer"></div>
+        <button class="btn btn-danger-outline">삭제</button>
+        <button class="btn btn-primary" onclick="openModal('partNew')">+ 신규</button>
+      </div>
+      <div style="padding:14px 16px;">
+        <table><thead><tr><th></th><th>부품번호(P/N)</th><th>부품명칭</th><th>재고수량</th><th>안전재고</th><th>위치</th><th>적용기종</th></tr></thead>
+        <tbody>${rows}</tbody></table>
+      </div>
+    </div>`;
+  const modalNew = `<div class="modal-overlay" id="m-partNew"><div class="modal">
+    <div class="modal-head"><b>신규 부품 등록</b><button class="modal-close" onclick="closeModal('partNew')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>부품번호 (P/N)</label><input placeholder="예: WK724-3"></div>
+      <div class="field"><label>부품명칭</label><input class="disabled" placeholder="자동 표기" disabled></div>
+      <div class="field"><label>적용기종</label><select><option>DA-40NG</option><option>DA-42NG</option></select></div>
+      <div class="field"><label>보관 위치</label><input placeholder="청주 / 무안"></div>
+      <div class="field-row">
+        <div class="field"><label>초기 재고 수량</label><input type="number" placeholder="0"></div>
+        <div class="field"><label>안전재고 수량</label><input type="number" placeholder="0"></div>
+      </div>
+      <div class="field"><label>엑셀 업로드</label><div class="helper">📄 양식 다운로드 &nbsp;·&nbsp; ⬆ 파일 업로드</div></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('partNew')">닫기</button><button class="btn btn-primary">등록</button></div>
+  </div></div>`;
+  const modalEdit = `<div class="modal-overlay" id="m-partEdit"><div class="modal">
+    <div class="modal-head"><b>부품 정보 수정</b><button class="modal-close" onclick="closeModal('partEdit')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>부품번호 (P/N)</label><input class="disabled" value="WK724-3" disabled></div>
+      <div class="field"><label>부품명칭</label><input value="Fuel Filter"></div>
+      <div class="field"><label>적용기종</label><select><option>DA-40NG</option><option>DA-42NG</option></select></div>
+      <div class="field"><label>보관 위치</label><input value="무안"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('partEdit')">저장 후 닫기</button><button class="btn btn-primary">저장</button></div>
+  </div></div>`;
+  return shell('parts','재고관리 &gt; 부품관리', body, modalNew+modalEdit);
+}
+
+/* ---------------- PAGE 3: 입출고 관리 ---------------- */
+function pageIO(){
+  const inRows = `<tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">3</td><td class="mono">3</td><td>2026-01-14</td></tr>
+    <tr><td class="mono">LN94-40060</td><td>Split Pin</td><td class="mono">10</td><td class="mono">5</td><td>2026-01-14</td></tr>`;
+  const outRows = `<tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">2</td><td class="mono">1</td><td>무안</td><td>mech_mua_02</td><td>2026-06-20</td></tr>`;
+  const body = `
+    <div class="page-title">입출고 관리</div>
+    <div class="page-sub">입고·출고 이력 조회 / 등록</div>
+    <div class="toolbar">
+      <select class="chip-select"><option>전체 ▾</option><option>기체</option><option>엔진</option></select>
+      <input class="search-box" placeholder="부품번호 · 명칭 검색">
+      <div class="spacer"></div>
+      <button class="btn btn-outline" onclick="openModal('inNew')">+ 입고</button>
+      <button class="btn btn-primary" onclick="openModal('outNew')">- 출고</button>
+    </div>
+    <div class="grid-3" style="grid-template-columns:1fr 1fr;">
+      <div class="card"><div class="panel-title">입고표</div>
+        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>입고일</th></tr></thead><tbody>${inRows}</tbody></table>
+      </div>
+      <div class="card"><div class="panel-title">출고표</div>
+        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>출고수량</th><th>지역</th><th>담당자</th><th>출고일</th></tr></thead><tbody>${outRows}</tbody></table>
+      </div>
+    </div>`;
+  const mIn = `<div class="modal-overlay" id="m-inNew"><div class="modal">
+    <div class="modal-head"><b>입고 등록</b><button class="modal-close" onclick="closeModal('inNew')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>부품번호</label><input placeholder="WK724-3"></div>
+      <div class="field"><label>부품명칭</label><input class="disabled" placeholder="자동 표기" disabled></div>
+      <div class="field-row"><div class="field"><label>수량</label><input type="number"></div><div class="field"><label>날짜</label><input placeholder="📅 2026-07-11"></div></div>
+      <div class="helper">📄 양식 다운로드 &nbsp;·&nbsp; ⬆ 파일 업로드</div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('inNew')">닫기</button><button class="btn btn-primary">등록</button></div>
+  </div></div>`;
+  const mOut = `<div class="modal-overlay" id="m-outNew"><div class="modal">
+    <div class="modal-head"><b>출고 등록</b><button class="modal-close" onclick="closeModal('outNew')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>부품번호</label><input placeholder="WK724-3"></div>
+      <div class="field"><label>부품명칭</label><input class="disabled" placeholder="자동 표기" disabled></div>
+      <div class="field-row"><div class="field"><label>지역</label><select><option>무안</option><option>청주</option></select></div><div class="field"><label>날짜</label><input placeholder="📅 2026-07-11"></div></div>
+      <div class="field-row"><div class="field"><label>현재 재고</label><input class="disabled" value="2" disabled></div><div class="field"><label>출고 수량</label><input type="number"></div></div>
+      <div class="field"><label>담당 정비사</label><input placeholder="mech_mua_02"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('outNew')">닫기</button><button class="btn btn-primary">등록</button></div>
+  </div></div>`;
+  return shell('io','재고관리 &gt; 입출고관리', body, mIn+mOut);
+}
+
+/* ---------------- PAGE 4: 안전재고 관리 ---------------- */
+function pageSafety(){
+  const rows = parts.map(p=>{
+    const s=statusOf(p); const pct=Math.round(p.qty/p.safety*100);
+    const rowCls = s==='danger'?'row-danger':(s==='warn'?'row-warn':'');
+    return `<tr class="${rowCls}" onclick="openModal('safetyEdit')">
+      <td class="mono">${p.pn}</td><td>${p.name}</td><td class="mono">${p.qty}</td><td class="mono">${p.safety}</td>
+      <td class="mono">${pct}%</td><td>${statusBadge(p)}</td><td class="mono">€${(38+p.qty*4.2).toFixed(2)}</td></tr>`;
+  }).join('');
+  const need = parts.filter(p=>statusOf(p)!=='ok').map(p=>`<tr class="${statusOf(p)==='danger'?'row-danger':'row-warn'}">
+    <td class="mono">${p.pn}</td><td>${p.name}</td><td class="mono">${p.qty}</td><td class="mono">${p.safety}</td></tr>`).join('');
+  const shortageN = parts.filter(p=>statusOf(p)==='danger').length;
+  const warnN = parts.filter(p=>statusOf(p)==='warn').length;
+  const body = `
+    <div class="page-title">안전재고 관리</div>
+    <div class="page-sub">부품별 안전재고 현황 조회 / 기준 수정</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="toolbar" style="padding:14px 16px 0;">
+          <select class="chip-select"><option>전체 ▾</option></select>
+          <input class="search-box" placeholder="부품번호 · 명칭 검색">
+        </div>
+        <div style="padding:14px 16px;">
+        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>재고비율</th><th>상태</th><th>전분기 단가</th></tr></thead>
+        <tbody>${rows}</tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="grid-3" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
+          <div class="kpi-card"><div class="kpi-num" style="color:var(--danger)">${shortageN}</div><div class="kpi-label">부족</div></div>
+          <div class="kpi-card"><div class="kpi-num" style="color:#B4790D">${warnN}</div><div class="kpi-label">경고</div></div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="panel-title">다음 발주 필요 부품</div>
+          <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th></tr></thead><tbody>${need}</tbody></table>
+        </div>
+        <div class="card"><div class="panel-body" style="font-size:12.5px;">
+          <div style="margin-bottom:6px;">다음 발주일 &nbsp;<b>2026년 7월</b> <span class="helper">(고정: 1월/7월)</span></div>
+          <div class="helper">부족: 안전재고 이하 · 경고: 안전재고×1.5 이하 · 정상: 그 외</div>
+        </div></div>
+      </div>
+    </div>`;
+  const modal = `<div class="modal-overlay" id="m-safetyEdit"><div class="modal">
+    <div class="modal-head"><b>안전재고 수정</b><button class="modal-close" onclick="closeModal('safetyEdit')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>부품번호(P/N)</label><input class="disabled" value="WK724-3" disabled></div>
+      <div class="field"><label>부품명칭</label><input class="disabled" value="Fuel Filter" disabled></div>
+      <div class="field-row"><div class="field"><label>안전재고 수량</label><input type="number" value="3"></div><div class="field"><label>발주 단위 수량</label><input type="number" value="5"></div></div>
+      <div class="field"><label>수정 사유</label><input placeholder="예: 25년 소모량 재산정"></div>
+      <div class="warn-box">⚠ 현재 재고 2개로 안전재고 미달 — 등록 시 경고 표시</div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('safetyEdit')">저장</button><button class="btn btn-primary">저장 후 닫기</button></div>
+  </div></div>`;
+  return shell('safety','재고관리 &gt; 안전재고관리', body, modal);
+}
+
+/* ---------------- PAGE 5: 기체 관리 ---------------- */
+function pageAircraft(){
+  const acList40 = aircraft.filter(a=>a.model==='DA-40NG').map(a=>`<div class="ac-btn ${a.reg===selectedAC.reg?'sel':''}">${a.reg}</div>`).join('');
+  const acList42 = aircraft.filter(a=>a.model==='DA-42NG').map(a=>`<div class="ac-btn ${a.reg===selectedAC.reg?'sel':''}">${a.reg}</div>`).join('');
+  const rows = aircraft.map(a=>`<tr>
+    <td class="mono">${a.reg}</td><td class="mono">${a.serial}</td><td>${a.model}</td><td class="mono">${a.year}</td>
+    <td>${a.loc}</td><td class="mono">${a.hours}h</td><td class="mono">2026-05-02</td><td>${statusBadgeAC(a)}</td></tr>`).join('');
+  const compParts = [
+    {pn:'ENG-AE300', name:'Austro AE300 Engine', cycle:'1800H TBO'},
+    {pn:'PROP-MT', name:'MT-Propeller', cycle:'2400H TBO'},
+    {pn:'ALT-24', name:'Alternator', cycle:'2400H TBO'},
+    {pn:'BAT-500', name:'Main Battery', cycle:'500H TBO'},
+  ];
+  const compRows = compParts.map(c=>`<tr><td class="mono">${c.pn}</td><td>${c.name}</td><td class="mono">${c.cycle}</td></tr>`).join('');
+  const body = `
+    <div class="page-title">기체 관리 <span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:10px;">신규</span></div>
+    <div class="page-sub">기체 목록 / 기체 등록 / 기종 등록</div>
+    <div style="display:grid;grid-template-columns:200px 1fr 260px;gap:14px;align-items:start;">
+      <div class="card"><div class="panel-title">기종별 기체</div><div class="panel-body">
+        <div class="helper" style="margin-bottom:6px;">DA-40NG</div>${acList40}
+        <div class="helper" style="margin:10px 0 6px;">DA-42NG</div>${acList42}
+      </div></div>
+      <div>
+        <div class="toolbar">
+          <select class="chip-select"><option>전체 ▾</option><option>DA-40NG</option><option>DA-42NG</option></select>
+          <input class="search-box" placeholder="기체 등록번호 검색">
+          <div class="spacer"></div>
+          <button class="btn btn-danger-outline">삭제</button>
+          <button class="btn btn-primary" onclick="openModal('acNew')">+ 등록</button>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>등록번호</th><th>시리얼</th><th>기종</th><th>제조년도</th><th>기지</th><th>누적시간</th><th>최종점검</th><th>상태</th></tr></thead>
+          <tbody>${rows}</tbody></table>
+        </div>
+        <div class="card" style="margin-top:14px;">
+          <div class="panel-title">${selectedAC.reg} 상세</div>
+          <div class="panel-body" style="display:flex;gap:24px;font-size:12.5px;">
+            <div>설치일<br><b class="mono">2021-03-01</b></div>
+            <div>설치시간<br><b class="mono">0h</b></div>
+            <div>설치지역<br><b class="mono">${selectedAC.loc}</b></div>
+            <div>상태<br><b class="mono">운용중</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="panel-title">부품 정보 · ${selectedAC.reg}</div>
+        <table><thead><tr><th>부품번호</th><th>부품명칭</th><th>주기</th></tr></thead><tbody>${compRows}</tbody></table>
+      </div>
+    </div>`;
+  const modal = `<div class="modal-overlay" id="m-acNew"><div class="modal">
+    <div class="modal-head"><b>기체 등록</b><button class="modal-close" onclick="closeModal('acNew')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row"><div class="field"><label>기체 등록번호</label><input placeholder="HL1180"></div><div class="field"><label>기종</label><select><option>DA-40NG</option><option>DA-42NG</option></select></div></div>
+      <div class="field-row"><div class="field"><label>시리얼번호</label><input></div><div class="field"><label>제조년도</label><input placeholder="2024"></div></div>
+      <div class="field-row"><div class="field"><label>설치 지역</label><input placeholder="청주"></div><div class="field"><label>설치일</label><input placeholder="📅"></div></div>
+      <div class="field"><label>주기별 정비 부품 (기종 등록 데이터, 읽기전용)</label>
+        <div class="helper" style="border:1px solid var(--border);border-radius:7px;padding:8px 10px;">100H → WK724-3 외 4종 자동 표시</div>
+      </div>
+      <button class="btn btn-outline" style="align-self:flex-start;">+ 기종 등록</button>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('acNew')">닫기</button><button class="btn btn-primary">등록</button></div>
+  </div></div>`;
+  return shell('ac','항공기관리 &gt; 기체관리', body, modal);
+}
+function statusBadgeAC(a){
+  if(a.status==='danger') return '<span class="badge badge-danger">● 초과</span>';
+  if(a.status==='warn') return '<span class="badge badge-warn">● 임박</span>';
+  return '<span class="badge badge-ok">● 정상</span>';
+}
+
+/* ---------------- PAGE 6: 정비 이력 ---------------- */
+function pageHistory(){
+  const reg = `<tr onclick="openModal('histView')"><td class="mono">HL1179</td><td class="mono">5237.2h</td><td>항공기 100HRS</td><td>100H</td><td>mech_mua_01</td><td>2026-06-20</td></tr>
+    <tr><td class="mono">HL2046</td><td class="mono">5877.0h</td><td>100H</td><td>100H</td><td>mech_cju_02</td><td>2026-01-16</td></tr>`;
+  const irreg = `<tr><td class="mono">HL1176</td><td class="mono">5980.1h</td><td>계기 이상 점검</td><td>mech_cju_01</td><td>2026-04-02</td></tr>`;
+  const body = `
+    <div class="page-title">정비 이력</div>
+    <div class="page-sub">정기·비정기 정비 이력 조회 / 등록 (출고 자동 연동)</div>
+    <div class="toolbar">
+      <select class="chip-select"><option>전체 ▾</option><option>기체</option><option>엔진</option></select>
+      <select class="chip-select"><option>전체 ▾</option><option>DA-40NG</option><option>DA-42NG</option></select>
+      <input class="search-box" placeholder="기체 등록번호 검색">
+      <div class="spacer"></div>
+      <button class="btn btn-danger-outline">삭제</button>
+      <button class="btn btn-primary" onclick="openModal('histNew')">+ 등록</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 260px;gap:14px;">
+      <div class="card"><div class="panel-title">정기 정비</div>
+        <table><thead><tr><th>등록번호</th><th>누적시간</th><th>정비종류</th><th>주기</th><th>담당자</th><th>날짜</th></tr></thead><tbody>${reg}</tbody></table>
+      </div>
+      <div class="card"><div class="panel-title">비정기 정비</div>
+        <table><thead><tr><th>등록번호</th><th>누적시간</th><th>정비종류</th><th>담당자</th><th>날짜</th></tr></thead><tbody>${irreg}</tbody></table>
+      </div>
+      <div class="card"><div class="panel-title">교체 부품 목록</div>
+        <div class="panel-body" style="font-size:12.5px;">
+        <table><thead><tr><th>P/N</th><th>명칭</th><th>수량</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">1</td></tr>
+          <tr><td class="mono">E4A-52-300</td><td>Oil Filter</td><td class="mono">1</td></tr>
+        </tbody></table>
+        </div>
+      </div>
+    </div>`;
+  const modal = `<div class="modal-overlay" id="m-histNew"><div class="modal">
+    <div class="modal-head"><b>정비 이력 등록</b><button class="modal-close" onclick="closeModal('histNew')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row"><div class="field"><label>기종</label><select><option>DA-40NG</option><option>DA-42NG</option></select></div>
+      <div class="field"><label>기체 등록번호</label><select><option>HL1179</option></select></div></div>
+      <div class="field-row"><div class="field"><label>정비 종류</label><input placeholder="항공기 100 HRS"></div>
+      <div class="field"><label>주기</label><select><option>100H</option></select></div></div>
+      <div class="field-row"><div class="field"><label>날짜</label><input placeholder="📅"></div>
+      <div class="field"><label>담당 정비사</label><input placeholder="mech_mua_01"></div></div>
+      <div class="field"><label>교체부품 (BOM 자동 표기)</label>
+        <div class="helper" style="border:1px solid var(--border);border-radius:7px;padding:8px 10px;display:flex;justify-content:space-between;">
+          WK724-3 · Fuel Filter <span>수량 1 [-][+]</span></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('histNew')">닫기</button><button class="btn btn-primary">등록</button></div>
+  </div></div>`;
+  return shell('hist','항공기관리 &gt; 정비이력', body, modal);
+}
+
+/* ---------------- PAGE 7: 주기정비 현황 (조회전용) ---------------- */
+function pageStatus(){
+  const acBtns = aircraft.map(a=>`<div class="ac-btn ${a.reg===selectedAC.reg?'sel':''}">${a.reg}</div>`).join('');
+  const mk = (label)=>`<div class="card"><div class="panel-title">${label}</div>
+    <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>주기</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">2</td><td class="mono">3</td><td class="mono">100H</td></tr>
+      <tr><td class="mono">RU-1620</td><td>Air Filter</td><td class="mono">6</td><td class="mono">4</td><td class="mono">500H</td></tr>
+    </tbody></table></div>`;
+  const shortage = parts.filter(p=>statusOf(p)!=='ok').slice(0,4).map(p=>`<tr>
+    <td class="mono">${p.pn}</td><td>${p.name}</td><td class="mono">${p.qty}</td><td class="mono">${p.safety}</td></tr>`).join('');
+  const msbRows = ['MSB-E4-043 · 450DAY','MSB-A3-021 · 210DAY','MSB-E2-108 · 88DAY 임박','MSB-C1-014 · 완료'].map(m=>`<tr><td style="font-size:11.5px;">${m}</td></tr>`).join('');
+  const body = `
+    <div class="page-title">주기정비 현황 <span class="helper">(조회 전용)</span></div>
+    <div class="page-sub">기체별 주기정비 부품 현황 조회</div>
+    <div style="display:grid;grid-template-columns:220px 1fr;gap:14px;">
+      <div>
+        <div class="card" style="margin-bottom:14px;"><div class="panel-title">기체 선택</div>
+          <div class="panel-body">${acBtns}
+            <div class="helper" style="margin-top:12px;">${selectedAC.reg} · ${selectedAC.model}</div>
+            <div style="font-size:12.5px;margin-top:4px;">누적 <b class="mono">${selectedAC.hours}h</b></div>
+            <div style="font-size:12.5px;">잔여 <b class="mono">${selectedAC.remain}h</b></div>
+          </div>
+        </div>
+        <div class="card"><div class="panel-title">재고 부족 부품</div>
+          <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th></tr></thead><tbody>${shortage}</tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="toolbar">
+          <select class="chip-select"><option>전체 ▾</option></select>
+          <select class="chip-select"><option>DA-40NG</option><option>DA-42NG</option></select>
+          <input class="search-box" placeholder="부품번호 · 명칭 검색">
+        </div>
+        <div class="grid-3">${mk('기체 주기 정비')}${mk('엔진 주기 정비')}${mk('프로펠러')}</div>
+        <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          ${mk('TRP')}
+          <div class="card"><div class="panel-title">MSB 잔여 상태 (도래 여부)</div><table><tbody>${msbRows}</tbody></table></div>
+        </div>
+      </div>
+    </div>`;
+  return shell('status','항공기관리 &gt; 주기정비현황', body);
+}
+
+/* ---------------- PAGE 8 (제안, 원본 스펙엔 없음): 발주/구매관리 ---------------- */
+function pageProcurement(){
+  const body = `
+    <div class="page-title">발주 / 구매관리
+      <span style="font-size:11px;font-weight:700;color:#B4790D;background:#FEF3DE;padding:2px 8px;border-radius:10px;">제안 · 원본 스펙에 없음</span>
+    </div>
+    <div class="page-sub">환율 기반 상/하반기 구매시기 추천 + 예상금액 — 교수님 요청 핵심기능, 소진님 원본 7페이지엔 별도 화면 없이 안전재고관리 하단 2줄로만 존재했음</div>
+    <div class="toolbar">
+      <select class="chip-select"><option>HL1179 ▾</option></select>
+      <select class="chip-select"><option>Fuel Filter WK724-3 ▾</option></select>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="panel-title">EUR/KRW 환율 &amp; Z-Score (fn8)</div>
+          <div class="panel-body" style="display:flex;gap:28px;">
+            <div><div class="helper">현재 환율</div><div class="kpi-num" style="font-size:22px;">1,685<span style="font-size:12px;">원</span></div></div>
+            <div><div class="helper">60개월 이동평균</div><div class="kpi-num" style="font-size:22px;">1,650<span style="font-size:12px;">원</span></div></div>
+            <div><div class="helper">Z-Score</div><div class="kpi-num" style="font-size:22px;color:#B4790D;">+1.2</div></div>
+            <div style="align-self:center;"><span class="badge badge-warn">WAIT 권고</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="panel-title">상/하반기 저점 예측 (fn_rate_forecast)</div>
+          <div class="panel-body">
+            <svg viewBox="0 0 400 110" width="100%" height="110">
+              <polyline points="0,70 40,60 80,40 120,20 160,10 200,25 240,45 280,65 320,80 360,90 400,60" fill="none" stroke="#2F6FF0" stroke-width="2.5"/>
+              <circle cx="360" cy="90" r="4" fill="#12A150"/>
+              <text x="330" y="106" font-size="10" fill="#12A150" font-family="JetBrains Mono">7월 저점</text>
+            </svg>
+            <div class="helper">최근 6개월 추세 +3.1원/월(보합) · 계절적으로 하반기는 7월이 저점 경향</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="panel-title">다음 구매시기 &amp; 예상금액 (fn18)</div>
+          <table><thead><tr><th>부품</th><th>구매시기</th><th>태그</th><th>예상금액</th></tr></thead>
+          <tbody>
+            <tr><td>Fuel Filter</td><td class="mono">26-07</td><td><span class="badge badge-warn">하반기구매</span></td><td class="mono">902,002원</td></tr>
+            <tr><td>Oil Filter</td><td class="mono">26-07</td><td><span class="badge badge-warn">하반기구매</span></td><td class="mono">318,400원</td></tr>
+            <tr><td>Split Pin</td><td class="mono">27-01</td><td><span class="badge badge-ok">상반기구매예정</span></td><td class="mono">54,200원</td></tr>
+          </tbody></table>
+        </div>
+        <div class="card" style="margin-top:14px;">
+          <div class="panel-title">수입 총원가 계산기 (fn17)</div>
+          <div class="panel-body helper">단가(EUR) · 관부과세 · 운임 입력 → 학술감면 적용 절감액까지 계산. unit_price_eur 컬럼 채워지기 전까지는 빈 값.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px;border-style:dashed;border-color:#F5A524;">
+      <div class="panel-body helper">⚠ 이 페이지는 백엔드 API(procurement.py)는 이미 있지만 소진님 와이어프레임 문서엔 별도 페이지로 정의돼 있지 않음. 안전재고관리 페이지에 서브탭으로 넣을지, 이렇게 8번째 독립 페이지로 뺄지 팀 논의 필요.</div>
+    </div>`;
+  return shell('proc','재고관리 &gt; 발주관리 (제안)', body);
+}
+
+/* ---------------- RENDER / NAV ---------------- */
+const pageFns = {dash:pageDash, parts:pageParts, io:pageIO, safety:pageSafety, ac:pageAircraft, hist:pageHistory, status:pageStatus, proc:pageProcurement};
+
+function buildBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = frames.map(f=>`
+    <div class="frame-wrap">
+      <div class="frame-tag" style="${f.proposed?'background:#F5A524;':''}">${f.tag}${f.proposed?' <small>제안</small>':''}</div>
+      <div class="frame-thumb" style="${f.proposed?'border:1.5px dashed #F5A524;':''}" onclick="openFocus('${f.id}')">
+        <div class="thumb-scale">${pageFns[f.id]()}</div>
+      </div>
+    </div>`).join('');
+}
+function setMode(mode){
+  currentMode = mode;
+  document.getElementById('board').style.display = mode==='canvas' ? 'grid' : 'none';
+  document.getElementById('stage').classList.toggle('active', mode==='focus');
+  document.getElementById('btn-canvas').classList.toggle('active', mode==='canvas');
+  document.getElementById('btn-focus').classList.toggle('active', mode==='focus');
+  document.getElementById('backBtn').style.display = mode==='focus' ? 'flex' : 'none';
+}
+function openFocus(id){
+  currentFrame = id;
+  const f = frames.find(x=>x.id===id);
+  document.getElementById('focusTag').innerHTML = f.tag + (f.proposed?' <small>제안 · 원본 스펙에 없음</small>':' <small>1440 × 900</small>');
+  document.getElementById('focusTag').style.background = f.proposed ? '#F5A524' : '';
+  document.getElementById('focusApp').innerHTML = pageFns[id]();
+  setMode('focus');
+}
+function gotoFrame(id){ openFocus(id); }
+function openModal(name){ const m=document.getElementById('m-'+name); if(m) m.classList.add('show'); }
+function closeModal(name){ const m=document.getElementById('m-'+name); if(m) m.classList.remove('show'); }
+
+buildBoard();
+</script>
+</body>
+</html>
