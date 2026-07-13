@@ -142,7 +142,7 @@ body{margin:0;background:var(--canvas);font-family:var(--sans);color:var(--text)
 .btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);}
 .btn-danger-outline{background:#fff;border:1px solid var(--danger);color:var(--danger);}
 
-.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
 .grid-2{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 
@@ -209,7 +209,7 @@ tbody tr:hover{background:#F7F9FC;cursor:pointer;}
 
 <div class="chrome">
   <div class="file-name"><span class="dot"></span> MRO_UIUX_와이어프레임_기능명세 — v2 목업</div>
-  <div class="hint">7개 프레임 · Potato_123</div>
+  <div class="hint">8개 프레임 (1개 제안) · Potato_123</div>
   <div class="modeswitch">
     <button id="btn-canvas" class="active" onclick="setMode('canvas')">캔버스 보기</button>
     <button id="btn-focus" onclick="setMode('focus')">프레임 보기</button>
@@ -403,7 +403,8 @@ function pageParts(){
       <div class="field"><label>부품번호 (P/N)</label><input placeholder="예: WK724-3"></div>
       <div class="field"><label>부품명칭</label><input class="disabled" placeholder="자동 표기" disabled></div>
       <div class="field"><label>적용기종</label><select><option>DA-40NG</option><option>DA-42NG</option></select></div>
-      <div class="field"><label>보관 위치</label><input placeholder="청주 / 무안"></div>
+      <div class="field"><label>보관 위치</label><select><option>중앙창고(청주)</option><option>무안 배분</option></select>
+        <div class="helper" style="margin-top:4px;">신규 등록은 기본적으로 중앙창고(청주) 입고. 무안 배분은 출고 등록에서 처리.</div></div>
       <div class="field-row">
         <div class="field"><label>초기 재고 수량</label><input type="number" placeholder="0"></div>
         <div class="field"><label>안전재고 수량</label><input type="number" placeholder="0"></div>
@@ -418,7 +419,7 @@ function pageParts(){
       <div class="field"><label>부품번호 (P/N)</label><input class="disabled" value="WK724-3" disabled></div>
       <div class="field"><label>부품명칭</label><input value="Fuel Filter"></div>
       <div class="field"><label>적용기종</label><select><option>DA-40NG</option><option>DA-42NG</option></select></div>
-      <div class="field"><label>보관 위치</label><input value="무안"></div>
+      <div class="field"><label>보관 위치</label><select><option>무안 배분</option><option>중앙창고(청주)</option></select></div>
     </div>
     <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('partEdit')">저장 후 닫기</button><button class="btn btn-primary">저장</button></div>
   </div></div>`;
@@ -427,8 +428,8 @@ function pageParts(){
 
 /* ---------------- PAGE 3: 입출고 관리 ---------------- */
 function pageIO(){
-  const inRows = `<tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">3</td><td class="mono">3</td><td>2026-01-14</td></tr>
-    <tr><td class="mono">LN94-40060</td><td>Split Pin</td><td class="mono">10</td><td class="mono">5</td><td>2026-01-14</td></tr>`;
+  const inRows = `<tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">3</td><td class="mono">3</td><td class="mono">€38.20</td><td>2026-01-14</td></tr>
+    <tr><td class="mono">LN94-40060</td><td>Split Pin</td><td class="mono">10</td><td class="mono">5</td><td class="mono">€4.10</td><td>2026-01-14</td></tr>`;
   const outRows = `<tr><td class="mono">WK724-3</td><td>Fuel Filter</td><td class="mono">2</td><td class="mono">1</td><td>무안</td><td>mech_mua_02</td><td>2026-06-20</td></tr>`;
   const body = `
     <div class="page-title">입출고 관리</div>
@@ -442,7 +443,7 @@ function pageIO(){
     </div>
     <div class="grid-3" style="grid-template-columns:1fr 1fr;">
       <div class="card"><div class="panel-title">입고표</div>
-        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>입고일</th></tr></thead><tbody>${inRows}</tbody></table>
+        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>단가(EUR)</th><th>입고일</th></tr></thead><tbody>${inRows}</tbody></table>
       </div>
       <div class="card"><div class="panel-title">출고표</div>
         <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>출고수량</th><th>지역</th><th>담당자</th><th>출고일</th></tr></thead><tbody>${outRows}</tbody></table>
@@ -454,6 +455,7 @@ function pageIO(){
       <div class="field"><label>부품번호</label><input placeholder="WK724-3"></div>
       <div class="field"><label>부품명칭</label><input class="disabled" placeholder="자동 표기" disabled></div>
       <div class="field-row"><div class="field"><label>수량</label><input type="number"></div><div class="field"><label>날짜</label><input placeholder="📅 2026-07-11"></div></div>
+      <div class="field-row"><div class="field"><label>단가 (EUR)</label><input type="number" placeholder="예: 38.20"></div><div class="field"><label>배치번호</label><select><option>1 (상반기)</option><option>2 (하반기)</option></select></div></div>
       <div class="helper">📄 양식 다운로드 &nbsp;·&nbsp; ⬆ 파일 업로드</div>
     </div>
     <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('inNew')">닫기</button><button class="btn btn-primary">등록</button></div>
@@ -479,7 +481,7 @@ function pageSafety(){
     const rowCls = s==='danger'?'row-danger':(s==='warn'?'row-warn':'');
     return `<tr class="${rowCls}" onclick="openModal('safetyEdit')">
       <td class="mono">${p.pn}</td><td>${p.name}</td><td class="mono">${p.qty}</td><td class="mono">${p.safety}</td>
-      <td class="mono">${pct}%</td><td>${statusBadge(p)}</td><td class="mono">€${(38+p.qty*4.2).toFixed(2)}</td></tr>`;
+      <td class="mono">${pct}%</td><td>${statusBadge(p)}</td><td class="mono" style="color:var(--text-faint);" title="unit_price_eur 실데이터 미확보 — 예시 표시">€${(38+p.qty*4.2).toFixed(2)}*</td></tr>`;
   }).join('');
   const need = parts.filter(p=>statusOf(p)!=='ok').map(p=>`<tr class="${statusOf(p)==='danger'?'row-danger':'row-warn'}">
     <td class="mono">${p.pn}</td><td>${p.name}</td><td class="mono">${p.qty}</td><td class="mono">${p.safety}</td></tr>`).join('');
@@ -495,8 +497,9 @@ function pageSafety(){
           <input class="search-box" placeholder="부품번호 · 명칭 검색">
         </div>
         <div style="padding:14px 16px;">
-        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>재고비율</th><th>상태</th><th>전분기 단가</th></tr></thead>
+        <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>안전재고</th><th>재고비율</th><th>상태</th><th>전분기 단가*</th></tr></thead>
         <tbody>${rows}</tbody></table>
+        <div class="helper" style="padding:0 16px 12px;">* unit_price_eur 실측값 미확보 — 임시 예시값, DB 채워지면 실데이터로 교체 예정</div>
         </div>
       </div>
       <div>
@@ -537,11 +540,12 @@ function pageAircraft(){
     <td>${a.loc}</td><td class="mono">${a.hours}h</td><td class="mono">2026-05-02</td><td>${statusBadgeAC(a)}</td></tr>`).join('');
   const compParts = [
     {pn:'ENG-AE300', name:'Austro AE300 Engine', cycle:'1800H TBO'},
-    {pn:'PROP-MT', name:'MT-Propeller', cycle:'2400H TBO'},
+    {pn:'PROP-MT', name:'MT-Propeller', cycle:'2600H TBO'},
     {pn:'ALT-24', name:'Alternator', cycle:'2400H TBO'},
-    {pn:'BAT-500', name:'Main Battery', cycle:'500H TBO'},
+    {pn:'BAT-500', name:'Main Battery', cycle:'TBO 미확인*'},
   ];
   const compRows = compParts.map(c=>`<tr><td class="mono">${c.pn}</td><td>${c.name}</td><td class="mono">${c.cycle}</td></tr>`).join('');
+  const compNote = `<div class="helper" style="padding:10px 16px 0;">* AMM 05-10-00 Life-Limited Parts 표 미확보 부품 — 확인 후 채울 것</div>`;
   const body = `
     <div class="page-title">기체 관리 <span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:10px;">신규</span></div>
     <div class="page-sub">기체 목록 / 기체 등록 / 기종 등록</div>
@@ -575,6 +579,7 @@ function pageAircraft(){
       <div class="card">
         <div class="panel-title">부품 정보 · ${selectedAC.reg}</div>
         <table><thead><tr><th>부품번호</th><th>부품명칭</th><th>주기</th></tr></thead><tbody>${compRows}</tbody></table>
+        ${compNote}
       </div>
     </div>`;
   const modal = `<div class="modal-overlay" id="m-acNew"><div class="modal">
@@ -644,6 +649,7 @@ function pageHistory(){
         <div class="helper" style="border:1px solid var(--border);border-radius:7px;padding:8px 10px;display:flex;justify-content:space-between;">
           WK724-3 · Fuel Filter <span>수량 1 [-][+]</span></div>
       </div>
+      <div class="warn-box">⚠ BOM 테이블(예: Engine_100H)과 정비유형 입력값(예: ENG' 100 HRS) 표기가 다를 수 있음 — 자동표기 매칭 전 정규화 로직 필요</div>
     </div>
     <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('histNew')">닫기</button><button class="btn btn-primary">등록</button></div>
   </div></div>`;
