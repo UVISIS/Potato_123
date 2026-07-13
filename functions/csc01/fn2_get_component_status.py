@@ -7,14 +7,14 @@ from functions.db import get_client
 # 향후 aircraft_components.tbo_hours 컬럼 추가 시 이 맵 제거 (선택지 ①)
 TBO_HOURS_MAP = {
     "engine": 1800,           # Austro AE300 (DA-40/42 NG)
-    "propeller": 2400,        # MTV-6 (DA-40/42 NG)
+    "propeller": 2600,        # MTV-6 (DA-40/42 NG) — 2026-07-14 수정: DA40NG 매뉴얼/maintenance_schedule 실측 기준 2400→2600
     "alternator": 2400,       # 교류 발전기
     "governor": 2400,         # 프로펠러 거버너
     "fuel_pump": 2400,        # 전기 연료 펌프
     "battery": 500,           # 항공용 배터리
     "backup_battery": 1,      # ECU 백업 배터리 (1년 = 교체)
     "elt_battery": 6,         # ELT 배터리 (6년 = 교체)
-    "coolant": 500,           # 냉각액 (500시간 또는 2년)
+    "coolant": 600,           # 냉각액 (600시간 또는 2년) — 2026-07-14 수정: Austro Engine E4 시리즈 매뉴얼 기준 500→600
     "brake_fluid": 500,       # 유압 브레이크유 (500시간 또는 3년)
     "safety_harness": 1000,   # 안전 벨트 (12년)
     "harness": 1000,          # 일반 하네스
@@ -27,7 +27,7 @@ TBO_HOURS_MAP = {
     "hydraulic_fluid": 500,   # 유압유
     "oil": 100,               # 엔진오일 (100시간)
     "air_filter": 500,        # 공기 필터
-    "fuel_filter": 1000,      # 연료 필터 (1000시간)
+    "fuel_filter": 100,       # 연료 필터 (100시간) — 2026-07-14 수정: DA40NG/DA42NG AMM 05-10-00 기준 1000→100 (10배 오류)
     "oil_filter": 500,        # 오일 필터 (500시간)
 }
 
