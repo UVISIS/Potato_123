@@ -9,6 +9,7 @@ from routers.errors import aircraft_not_found, invalid_input, db_error, error_re
 
 # fn 연동
 from functions.csc01.fn1_get_aircraft_info import get_aircraft_info
+from functions.csc01.fn2_get_component_status import get_component_status as fn2_get_component_status
 from functions.csc01.fn3_update_flight_hours import update_flight_hours as fn3_update_flight_hours
 from functions.csc04.fn16_seed_maintenance_schedule import (
     copy_maintenance_schedule,
@@ -150,6 +151,24 @@ def get_flight_hours(aircraft_id: int):
     """비행시간 이력 조회"""
     response = supabase.table("flight_hours").select("*").eq("aircraft_id", aircraft_id).execute()
     return response.data
+
+# ── 부품 TBO 조회 ──────────────────────────────
+
+@router.get("/{aircraft_id}/tbo-status")
+def get_tbo_status(aircraft_id: int, include_unknown: bool = True):
+    """기체 장착 부품 TBO 잔여시간 조회 (fn2 래핑)
+
+    - aircraft_components.tbo_hours가 있으면 우선 사용, 없으면 TBO_HOURS_MAP(component_type 매핑) 값으로 폴백
+    - status: overdue(≤0h) / warning(≤50h) / upcoming(≤200h) / serviceable / unknown
+    """
+    try:
+        return fn2_get_component_status(aircraft_id, include_unknown)
+    except ValueError as e:
+        if "존재하지 않습니다" in str(e):
+            aircraft_not_found(aircraft_id)
+        invalid_input(str(e))
+    except RuntimeError as e:
+        db_error(str(e))
 
 @router.put("/{aircraft_id}/flight-hours")
 def update_flight_hours(aircraft_id: int, data: FlightHoursUpdate):
