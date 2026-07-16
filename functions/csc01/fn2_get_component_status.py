@@ -101,7 +101,7 @@ def get_component_status(
     try:
         comp_result = (
             client.table("aircraft_components")
-            .select("id, component_name, component_type, installed_date, install_hours, status")
+            .select("id, component_name, component_type, installed_date, install_hours, tbo_hours, status")
             .eq("aircraft_id", aircraft_id)
             .execute()
         )
@@ -121,7 +121,7 @@ def get_component_status(
         install_hours = comp.get("install_hours")
 
         # TBO 조회
-        tbo_hours = TBO_HOURS_MAP.get(component_type)
+        tbo_hours = comp.get("tbo_hours") or TBO_HOURS_MAP.get(component_type)
 
         # TBO 미정의인 경우
         if tbo_hours is None:
