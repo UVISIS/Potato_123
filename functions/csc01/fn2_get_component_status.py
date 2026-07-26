@@ -1,10 +1,19 @@
 from __future__ import annotations
 from functions.db import get_client
+from functions.constants import ANNUAL_FLIGHT_HOURS
 
 
 # ── TBO (Time Between Overhaul) 시간 정의
 # 참고: DA40NG_주기검사_항목, DA42NG_주기검사_항목, 052000_Scheduled_Maintenance_Checks.pdf
 # 향후 aircraft_components.tbo_hours 컬럼 추가 시 이 맵 제거 (선택지 ①)
+# 이슈#17: backup_battery/elt_battery는 원래 "연" 단위 교체주기였으나 계산식이
+#          시간 단위 전제(remaining_tbo = install_hours + tbo_hours - total_flight_hours)라
+#          그대로 넣으면 항상 overdue로 오탐되던 문제가 있었음. 연간비행시간
+#          (ANNUAL_FLIGHT_HOURS, 800h/년, functions/constants.py 공용 상수) 기준으로
+#          시간 단위 환산해 통일함 (2026-07-26).
+#          ⚠ 근사치: 함대 평균(800h/년) 가정이므로 개별 기체 실제 비행시간과 괴리가
+#          있으면 오차 발생 가능. aircraft_components.tbo_hours 컬럼에 실측값이
+#          채워지면 위 select에서 DB값을 우선 사용하므로 자동으로 정밀해짐.
 TBO_HOURS_MAP = {
     "engine": 1800,           # Austro AE300 (DA-40/42 NG)
     "propeller": 2600,        # MTV-6 (DA-40/42 NG) — 2026-07-14 수정: DA40NG 매뉴얼/maintenance_schedule 실측 기준 2400→2600
@@ -12,8 +21,8 @@ TBO_HOURS_MAP = {
     "governor": 2400,         # 프로펠러 거버너
     "fuel_pump": 2400,        # 전기 연료 펌프
     "battery": 500,           # 항공용 배터리
-    "backup_battery": 1,      # ECU 백업 배터리 (1년 = 교체)
-    "elt_battery": 6,         # ELT 배터리 (6년 = 교체)
+    "backup_battery": ANNUAL_FLIGHT_HOURS * 1,   # ECU 백업 배터리 — 원 1년 주기 → 800h 환산 (이슈#17)
+    "elt_battery": ANNUAL_FLIGHT_HOURS * 6,      # ELT 배터리 — 원 6년 주기 → 4800h 환산 (이슈#17)
     "coolant": 600,           # 냉각액 (600시간 또는 2년) — 2026-07-14 수정: Austro Engine E4 시리즈 매뉴얼 기준 500→600
     "brake_fluid": 500,       # 유압 브레이크유 (500시간 또는 3년)
     "safety_harness": 1000,   # 안전 벨트 (12년)
@@ -120,7 +129,7 @@ def get_component_status(
         installed_date = comp.get("installed_date")
         install_hours = comp.get("install_hours")
 
-        # TBO 조회
+        # TBO 조회 (DB 값 우선, 없으면 하드코딩 맵으로 폴백)
         tbo_hours = comp.get("tbo_hours") or TBO_HOURS_MAP.get(component_type)
 
         # TBO 미정의인 경우
@@ -202,9 +211,15 @@ def get_component_status(
 #       · 상태: overdue(≤0h) / warning(≤50h) / upcoming(≤200h) / serviceable / unknown
 #       · TBO_HOURS_MAP: 30+ 부품 유형 기본값 정의
 #       · include_unknown 파라미터로 미정의 부품 필터 가능
+# v1.1  2026-07-14  하드코딩 TBO 값 실측 교정 (propeller 2400→2600, coolant 500→600, fuel_filter 1000→100)
+# v1.2  2026-07-16  이슈6: aircraft_components.tbo_hours DB값 우선 사용, 없으면 맵으로 폴백.
+#                   GET /aircraft/{id}/tbo-status 라우터 등록(routers/aircraft.py)
+# v1.3  2026-07-26  이슈17: backup_battery/elt_battery 연→시간 단위 통일
+#                   (ANNUAL_FLIGHT_HOURS=800h/년 기준 환산: 1년→800h, 6년→4800h)
+#                   근사치이므로 aircraft_components.tbo_hours 실측값이 채워지면
+#                   DB 우선 로직에 의해 자동으로 정밀해짐
 #
 # 향후 변경 예정
 #       · aircraft_components.tbo_hours 컬럼 추가 시 (선택지①) TBO_HOURS_MAP 제거
 #       · maintenance_schedule.status와 동기화 (트리거 또는 job)
-#       · TBO 임계값 자동 조정 (시간 vs 연도 기준 혼합 처리)
 # =============================================================================
