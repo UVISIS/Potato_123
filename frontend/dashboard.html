@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>메인 대시보드 · MRO System</title>
+<style>
+:root{
+  --canvas:#EEF0F4; --navy:#0B1220; --navy-2:#141D30; --sidebar-line:#22304A;
+  --accent:#2F6FF0; --accent-soft:#E8EFFE; --surface:#FFFFFF; --border:#E3E7EE;
+  --text:#101826; --text-soft:#5B6472; --text-faint:#94A0B2;
+  --danger:#E5484D; --danger-bg:#FDECEC; --warn:#F5A524; --warn-bg:#FEF3DE;
+  --ok:#12A150; --ok-bg:#E7F8EE; --radius:10px;
+  --mono:'JetBrains Mono',monospace; --sans:-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--canvas);font-family:var(--sans);color:var(--text);}
+.appwrap{display:flex;min-height:100vh;}
+.app-sidebar{width:224px;background:var(--navy);color:#C9D2E3;flex-shrink:0;display:flex;flex-direction:column;}
+.app-sidebar .brand{padding:20px 18px;font-weight:800;font-size:15px;color:#fff;border-bottom:1px solid var(--sidebar-line);display:flex;align-items:center;gap:8px;}
+.nav-group-label{padding:14px 18px 4px;font-size:11px;letter-spacing:.06em;color:#5A6478;font-weight:700;text-transform:uppercase;}
+.nav-sub{padding:10px 18px 10px 34px;font-size:13px;color:#AEB8CB;cursor:pointer;border-left:2px solid transparent;}
+.nav-sub.selected{color:#fff;font-weight:700;border-left:2px solid var(--accent);background:var(--navy-2);}
+.app-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.app-header{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;font-size:12.5px;color:var(--text-soft);flex-shrink:0;background:#fff;}
+.app-header .crumb{font-weight:600;color:var(--text);}
+.app-header .crumb span{color:var(--text-faint);font-weight:500;}
+.app-header .api-cfg{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;}
+.app-header input{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11.5px;width:190px;}
+.app-body{flex:1;padding:20px 24px;overflow:auto;}
+.page-title{font-size:18px;font-weight:800;margin:0 0 4px;}
+.page-sub{font-size:12.5px;color:var(--text-soft);margin:0 0 18px;}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.chip-select{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 10px;font-size:12.5px;}
+.search-box{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 12px;font-size:12.5px;min-width:200px;}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+.grid-2{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{text-align:left;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap;}
+tbody td{padding:10px 12px;border-bottom:1px solid #F0F2F5;color:var(--text);white-space:nowrap;}
+tbody tr:hover{background:#F7F9FC;}
+.mono{font-family:var(--mono);}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-danger{background:var(--danger-bg);color:var(--danger);}
+.badge-warn{background:var(--warn-bg);color:#B4790D;}
+.badge-ok{background:var(--ok-bg);color:var(--ok);}
+.badge-muted{background:#F0F2F5;color:var(--text-faint);}
+.gauge-wrap{display:flex;flex-direction:column;gap:4px;}
+.gauge-track{position:relative;height:10px;border-radius:6px;background:#1B2333;overflow:hidden;}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,#2F6FF0,#5B9CFF);}
+.gauge-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-faint);}
+.panel-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.panel-body{padding:14px 16px;}
+.ac-btn{border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;cursor:pointer;background:#fff;}
+.ac-btn.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.ac-dot{width:8px;height:8px;border-radius:50%;}
+.tabbtn{font-size:10.5px;padding:3px 8px;border-radius:5px;cursor:pointer;}
+.tabbtn.on{background:#fff;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.tabbtn.off{color:var(--text-faint);}
+.err{color:var(--danger);font-size:12px;padding:12px;}
+.loading{color:var(--text-faint);font-size:12px;padding:12px;}
+</style>
+</head>
+<body>
+<div class="appwrap">
+  <div class="app-sidebar">
+    <div class="brand">&#9992; MRO System</div>
+    <div class="nav-sub selected">메인 대시보드</div>
+    <div class="nav-group-label">재고관리</div>
+    <div class="nav-sub">부품 관리</div>
+    <div class="nav-sub">입출고 관리</div>
+    <div class="nav-sub">안전재고 관리</div>
+    <div class="nav-sub" onclick="location.href='procurement.html'">발주 관리 (제안)</div>
+    <div class="nav-group-label">항공기관리</div>
+    <div class="nav-sub">기체 관리</div>
+    <div class="nav-sub">정비 이력</div>
+    <div class="nav-sub">주기정비 현황</div>
+  </div>
+  <div class="app-main">
+    <div class="app-header">
+      <div class="crumb">메인화면 <span>/ 메뉴 &gt; 메인 대시보드</span></div>
+      <div class="api-cfg">
+        API: <input id="apiBase" value="http://127.0.0.1:8000" onchange="loadAll()">
+        <button onclick="loadAll()" style="cursor:pointer;border:1px solid var(--border);background:#fff;border-radius:6px;padding:4px 8px;">&#8635; 새로고침</button>
+      </div>
+    </div>
+    <div class="app-body">
+      <div class="page-title">메인 대시보드</div>
+      <div class="page-sub">기체별 주기정비 현황 + 재고 통합 뷰 (실시간 API 연동)</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="toolbar" style="padding:14px 16px 0;">
+            <select class="chip-select" id="catFilter" onchange="renderInventory()">
+              <option value="">전체 ▾</option>
+              <option value="기체">기체</option>
+              <option value="엔진">엔진</option>
+              <option value="프로펠러">프로펠러</option>
+              <option value="TRP">TRP</option>
+              <option value="기타">기타</option>
+            </select>
+            <input class="search-box" id="searchBox" placeholder="부품번호 또는 부품명칭 검색" oninput="renderInventory()">
+          </div>
+          <div style="padding:14px 16px;" id="invWrap"><div class="loading">불러오는 중…</div></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="panel-title">항공기 선택</div>
+            <div class="panel-body" id="acList"><div class="loading">불러오는 중…</div></div>
+          </div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+              <span id="gaugeTitle">-</span>
+              <span style="display:flex;gap:2px;background:#F0F2F5;border-radius:6px;padding:2px;">
+                <span class="tabbtn" id="tabAc" onclick="setGaugeTab('ac')">기체</span>
+                <span class="tabbtn" id="tabEng" onclick="setGaugeTab('eng')">엔진</span>
+              </span>
+            </div>
+            <div class="panel-body" id="gaugeBody"><div class="loading">기체를 선택하세요</div></div>
+          </div>
+          <div class="card">
+            <div class="panel-title">재고 부족 부품</div>
+            <table><thead><tr><th>P/N</th><th>명칭</th><th>재고</th><th>상태</th></tr></thead>
+            <tbody id="shortageBody"><tr><td colspan="4" class="loading">불러오는 중…</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let aircraftList = [];
+let inventory = [];
+let selectedAircraftId = null;
+let overview = null;
+let gaugeTab = 'ac';
+
+function apiBase(){ return document.getElementById('apiBase').value.replace(/\/$/,''); }
+
+async function jget(path){
+  const r = await fetch(apiBase() + path);
+  if(!r.ok) throw new Error(path + ' → HTTP ' + r.status);
+  return r.json();
+}
+
+function statusBadge(status){
+  if(status === '부족') return '<span class="badge badge-danger">● 부족</span>';
+  if(status === '경고') return '<span class="badge badge-warn">● 경고</span>';
+  if(status === '정상') return '<span class="badge badge-ok">● 정상</span>';
+  return '<span class="badge badge-muted">● 기준없음</span>';
+}
+
+function dotColor(ac){
+  const hr = ac._minRemain;
+  if(hr === undefined || hr === null) return '#94A0B2';
+  if(hr < 0) return '#E5484D';
+  if(hr <= 50) return '#F5A524';
+  return '#12A150';
+}
+
+async function loadAll(){
+  document.getElementById('invWrap').innerHTML = '<div class="loading">불러오는 중…</div>';
+  document.getElementById('acList').innerHTML = '<div class="loading">불러오는 중…</div>';
+  try{
+    const [ac, inv] = await Promise.all([jget('/aircraft'), jget('/inventory')]);
+    aircraftList = ac || [];
+    inventory = (inv && !inv.error) ? inv : [];
+    if(inv && inv.error) throw new Error(inv.error);
+
+    // 기체별 최소 잔여시간 미리 조회 (사이드 점 색상용) — overview는 가벼운 필드만 사용
+    await Promise.all(aircraftList.map(async a => {
+      try{
+        const ov = await jget('/maintenance/overview/' + a.id);
+        const remains = (ov.items||[]).map(i => i.hours_remaining).filter(v => v !== null && v !== undefined);
+        a._minRemain = remains.length ? Math.min(...remains) : null;
+      }catch(e){ a._minRemain = null; }
+    }));
+
+    if(!selectedAircraftId && aircraftList.length) selectedAircraftId = aircraftList[0].id;
+    renderAircraftList();
+    renderInventory();
+    if(selectedAircraftId) await selectAircraft(selectedAircraftId);
+  }catch(e){
+    document.getElementById('invWrap').innerHTML = '<div class="err">API 연결 실패: ' + e.message + ' (FastAPI 서버가 실행 중인지, API 주소가 맞는지 확인하세요)</div>';
+    document.getElementById('acList').innerHTML = '<div class="err">로드 실패</div>';
+  }
+}
+
+function renderAircraftList(){
+  document.getElementById('acList').innerHTML = aircraftList.map(a => `
+    <div class="ac-btn ${a.id===selectedAircraftId?'sel':''}" onclick="selectAircraft(${a.id})">
+      <span>${a.registration||('ID:'+a.id)}</span>
+      <span class="ac-dot" style="background:${dotColor(a)}"></span>
+    </div>`).join('') || '<div class="loading">등록된 기체 없음</div>';
+}
+
+async function selectAircraft(id){
+  selectedAircraftId = id;
+  renderAircraftList();
+  document.getElementById('gaugeBody').innerHTML = '<div class="loading">불러오는 중…</div>';
+  try{
+    overview = await jget('/maintenance/overview/' + id);
+    renderGauge();
+  }catch(e){
+    document.getElementById('gaugeBody').innerHTML = '<div class="err">TBO/정비 정보 로드 실패: ' + e.message + '</div>';
+  }
+}
+
+function pickSchedule(items, kind){
+  // kind: 'ac' → maintenance_type에 '항공기' 포함, 'eng' → "ENG'" 포함
+  const filtered = (items||[]).filter(i => kind==='ac'
+    ? (i.maintenance_type||'').includes('항공기')
+    : (i.maintenance_type||'').includes("ENG'") || (i.maintenance_type||'').toLowerCase().includes('eng'));
+  if(!filtered.length) return null;
+  filtered.sort((a,b) => (a.hours_remaining ?? Infinity) - (b.hours_remaining ?? Infinity));
+  return filtered[0];
+}
+
+function setGaugeTab(t){ gaugeTab = t; renderGauge(); }
+
+function renderGauge(){
+  document.getElementById('tabAc').className = 'tabbtn ' + (gaugeTab==='ac'?'on':'off');
+  document.getElementById('tabEng').className = 'tabbtn ' + (gaugeTab==='eng'?'on':'off');
+  const ac = aircraftList.find(a => a.id === selectedAircraftId);
+  document.getElementById('gaugeTitle').textContent = ac ? `${ac.registration} · ${ac.model}` : '-';
+  if(!overview){ document.getElementById('gaugeBody').innerHTML = '<div class="loading">데이터 없음</div>'; return; }
+
+  const s = pickSchedule(overview.items, gaugeTab);
+  if(!s){
+    document.getElementById('gaugeBody').innerHTML = `
+      <div style="font-size:11.5px;color:var(--text-soft);margin-bottom:8px;">누적 비행시간 <b class="mono" style="color:var(--text);font-size:13px;">${overview.total_flight_hours ?? '-'}h</b></div>
+      <div class="loading">해당 유형의 정비 스케줄 없음</div>`;
+    return;
+  }
+  const remain = s.hours_remaining;
+  const interval = s.interval_hours || 200;
+  const pct = remain === null || remain === undefined ? 0 : (remain < 0 ? 100 : Math.min(100, Math.round((1 - remain/interval) * 100)));
+  const barColor = (remain !== null && remain < 0) ? '#E5484D' : 'linear-gradient(90deg,#2F6FF0,#5B9CFF)';
+  document.getElementById('gaugeBody').innerHTML = `
+    <div style="font-size:11.5px;color:var(--text-soft);margin-bottom:8px;">누적 비행시간 <b class="mono" style="color:var(--text);font-size:13px;">${overview.total_flight_hours ?? '-'}h</b></div>
+    <div class="gauge-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span>${s.maintenance_type}</span><b class="mono">${remain ?? '-'}h</b></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="gauge-ticks"><span>0</span><span>${interval}H</span></div>
+    </div>
+    <div style="margin-top:10px;font-size:11.5px;color:var(--text-soft);">상태 &nbsp;<b class="mono" style="color:var(--text);">${s.status||'-'}</b> · 잔여일수 <b class="mono">${s.days_remaining ?? '-'}</b>일</div>`;
+}
+
+function renderInventory(){
+  const cat = document.getElementById('catFilter').value;
+  const q = (document.getElementById('searchBox').value || '').toLowerCase();
+  let rows = inventory.filter(p =>
+    (!cat || p.category === cat) &&
+    (!q || (p.part_number||'').toLowerCase().includes(q) || (p.nomenclature||'').toLowerCase().includes(q))
+  );
+  document.getElementById('invWrap').innerHTML = `
+    <table><thead><tr><th>부품번호</th><th>부품명칭</th><th>카테고리</th><th>재고수량</th><th>안전재고</th><th>상태</th></tr></thead>
+    <tbody>${rows.map(p => `<tr>
+      <td class="mono">${p.part_number||'-'}</td><td>${p.nomenclature||'-'}</td><td>${p.category||'-'}</td>
+      <td class="mono">${p.quantity_on_hand}</td><td class="mono">${p.safety_stock ?? '-'}</td><td>${statusBadge(p.status)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="loading">결과 없음</td></tr>'}</tbody></table>`;
+
+  const shortage = inventory.filter(p => p.status === '부족' || p.status === '경고').slice(0, 20);
+  document.getElementById('shortageBody').innerHTML = shortage.map(p => `<tr>
+    <td class="mono">${p.part_number||'-'}</td><td>${p.nomenclature||'-'}</td><td class="mono">${p.quantity_on_hand}</td><td>${statusBadge(p.status)}</td>
+  </tr>`).join('') || '<tr><td colspan="4" class="loading">부족/경고 부품 없음</td></tr>';
+}
+
+loadAll();
+</script>
+</body>
+</html>

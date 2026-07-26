@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>발주/구매관리 · MRO System</title>
+<style>
+:root{
+  --canvas:#EEF0F4; --navy:#0B1220; --navy-2:#141D30; --sidebar-line:#22304A;
+  --accent:#2F6FF0; --accent-soft:#E8EFFE; --surface:#FFFFFF; --border:#E3E7EE;
+  --text:#101826; --text-soft:#5B6472; --text-faint:#94A0B2;
+  --danger:#E5484D; --danger-bg:#FDECEC; --warn:#F5A524; --warn-bg:#FEF3DE;
+  --ok:#12A150; --ok-bg:#E7F8EE; --radius:10px;
+  --mono:'JetBrains Mono',monospace; --sans:-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--canvas);font-family:var(--sans);color:var(--text);}
+.appwrap{display:flex;min-height:100vh;}
+.app-sidebar{width:224px;background:var(--navy);color:#C9D2E3;flex-shrink:0;display:flex;flex-direction:column;}
+.app-sidebar .brand{padding:20px 18px;font-weight:800;font-size:15px;color:#fff;border-bottom:1px solid var(--sidebar-line);display:flex;align-items:center;gap:8px;}
+.nav-group-label{padding:14px 18px 4px;font-size:11px;letter-spacing:.06em;color:#5A6478;font-weight:700;text-transform:uppercase;}
+.nav-sub{padding:10px 18px 10px 34px;font-size:13px;color:#AEB8CB;cursor:pointer;border-left:2px solid transparent;}
+.nav-sub.selected{color:#fff;font-weight:700;border-left:2px solid var(--accent);background:var(--navy-2);}
+.app-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.app-header{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;font-size:12.5px;color:var(--text-soft);flex-shrink:0;background:#fff;}
+.app-header .crumb{font-weight:600;color:var(--text);}
+.app-header .crumb span{color:var(--text-faint);font-weight:500;}
+.app-header .api-cfg{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;}
+.app-header input{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11.5px;width:190px;}
+.app-body{flex:1;padding:20px 24px;overflow:auto;}
+.page-title{font-size:18px;font-weight:800;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
+.page-sub{font-size:12.5px;color:var(--text-soft);margin:0 0 18px;}
+.proposed-tag{font-size:11px;font-weight:700;color:#B4790D;background:#FEF3DE;padding:2px 8px;border-radius:10px;}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.chip-select{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 10px;font-size:12.5px;}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{text-align:left;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap;}
+tbody td{padding:10px 12px;border-bottom:1px solid #F0F2F5;color:var(--text);white-space:nowrap;}
+tbody tr:hover{background:#F7F9FC;}
+.mono{font-family:var(--mono);}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-danger{background:var(--danger-bg);color:var(--danger);}
+.badge-warn{background:var(--warn-bg);color:#B4790D;}
+.badge-ok{background:var(--ok-bg);color:var(--ok);}
+.badge-muted{background:#F0F2F5;color:var(--text-faint);}
+.panel-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.panel-body{padding:14px 16px;}
+.kpi-num{font-family:var(--mono);font-size:22px;font-weight:700;}
+.helper{font-size:11px;color:var(--text-faint);}
+.err{color:var(--danger);font-size:12px;padding:12px;}
+.loading{color:var(--text-faint);font-size:12px;padding:12px;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11.5px;font-weight:700;color:var(--text-soft);margin-bottom:5px;}
+.field input,.field select{width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12.5px;font-family:var(--sans);}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+.btn{border:none;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--sans);}
+.btn-primary{background:var(--accent);color:#fff;}
+.resultbox{margin-top:10px;font-size:12px;background:#FAFBFC;border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.resultbox div{margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="appwrap">
+  <div class="app-sidebar">
+    <div class="brand">&#9992; MRO System</div>
+    <div class="nav-sub" onclick="location.href='dashboard.html'">메인 대시보드</div>
+    <div class="nav-group-label">재고관리</div>
+    <div class="nav-sub">부품 관리</div>
+    <div class="nav-sub">입출고 관리</div>
+    <div class="nav-sub">안전재고 관리</div>
+    <div class="nav-sub selected">발주 관리 (제안)</div>
+    <div class="nav-group-label">항공기관리</div>
+    <div class="nav-sub">기체 관리</div>
+    <div class="nav-sub">정비 이력</div>
+    <div class="nav-sub">주기정비 현황</div>
+  </div>
+  <div class="app-main">
+    <div class="app-header">
+      <div class="crumb">메인화면 <span>/ 메뉴 &gt; 발주관리 (제안)</span></div>
+      <div class="api-cfg">
+        API: <input id="apiBase" value="http://127.0.0.1:8000" onchange="loadAll()">
+        <button onclick="loadAll()" style="cursor:pointer;border:1px solid var(--border);background:#fff;border-radius:6px;padding:4px 8px;">&#8635; 새로고침</button>
+      </div>
+    </div>
+    <div class="app-body">
+      <div class="page-title">발주 / 구매관리 <span class="proposed-tag">제안 · 원본 스펙에 없음</span></div>
+      <div class="page-sub">환율 기반 구매시기 추천 + 예상금액 (fn8/fn18/fn17 실시간 연동)</div>
+      <div class="toolbar">
+        <select class="chip-select" id="acSelect" onchange="onAircraftChange()"><option>불러오는 중…</option></select>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="panel-title">EUR/KRW 환율 &amp; Z-Score (fn8)</div>
+            <div class="panel-body" id="fxBody"><div class="loading">불러오는 중…</div></div>
+          </div>
+          <div class="card">
+            <div class="panel-title">다음 구매시기 &amp; 예상금액 (fn18)</div>
+            <div id="forecastWrap"><div class="loading">기체를 선택하세요</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="panel-title">구매시기 요약</div>
+            <div class="panel-body" id="summaryBody"><div class="loading">-</div></div>
+          </div>
+          <div class="card">
+            <div class="panel-title">수입 총원가 계산기 (fn17)</div>
+            <div class="panel-body">
+              <div class="field-row">
+                <div class="field"><label>단가 (EUR)</label><input type="number" id="lcPrice" placeholder="예: 112.05"></div>
+                <div class="field"><label>수량</label><input type="number" id="lcQty" value="1"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label>관세율 (%, 기본 0)</label><input type="number" id="lcDuty" value="0"></div>
+                <div class="field"><label>운임 총액 (EUR, 선택)</label><input type="number" id="lcFreight" placeholder="0"></div>
+              </div>
+              <div class="field"><label><input type="checkbox" id="lcAcademic" checked style="width:auto;"> 학술연구용품 감면 적용 (관세법 제90조)</label></div>
+              <button class="btn btn-primary" onclick="calcLanded()">계산</button>
+              <div class="resultbox" id="lcResult" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let aircraftList = [];
+let currentForecast = null;
+let priceCache = {};
+
+function apiBase(){ return document.getElementById('apiBase').value.replace(/\/$/,''); }
+
+async function jget(path){
+  const r = await fetch(apiBase() + path);
+  const data = await r.json().catch(()=>({error:'invalid JSON'}));
+  if(!r.ok && !data.error) throw new Error(path + ' → HTTP ' + r.status);
+  return data;
+}
+async function jpost(path, body){
+  const r = await fetch(apiBase() + path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  return r.json();
+}
+
+function recBadge(rec){
+  if(rec === 'BUY') return '<span class="badge badge-ok">BUY 적기</span>';
+  if(rec === 'WAIT') return '<span class="badge badge-warn">WAIT 보류</span>';
+  if(rec === 'NEUTRAL') return '<span class="badge badge-muted">NEUTRAL</span>';
+  return '<span class="badge badge-muted">-</span>';
+}
+function statusTagBadge(rec){
+  if(rec === '초과(즉시발주)') return '<span class="badge badge-danger">초과(즉시발주)</span>';
+  if(rec === '지금발주') return '<span class="badge badge-warn">지금발주</span>';
+  if(rec === '발주예정') return '<span class="badge badge-ok">발주예정</span>';
+  return '<span class="badge badge-muted">여유</span>';
+}
+
+async function loadAll(){
+  document.getElementById('fxBody').innerHTML = '<div class="loading">불러오는 중…</div>';
+  try{
+    const cur = await jget('/currency-rates');
+    if(cur.error) throw new Error(cur.error);
+    renderFx(cur);
+  }catch(e){
+    document.getElementById('fxBody').innerHTML = '<div class="err">환율 정보 로드 실패: ' + e.message + '</div>';
+  }
+  try{
+    aircraftList = await jget('/aircraft');
+    const sel = document.getElementById('acSelect');
+    sel.innerHTML = aircraftList.map(a => `<option value="${a.id}">${a.registration} · ${a.model}</option>`).join('');
+    if(aircraftList.length) onAircraftChange();
+  }catch(e){
+    document.getElementById('acSelect').innerHTML = '<option>로드 실패</option>';
+    document.getElementById('forecastWrap').innerHTML = '<div class="err">API 연결 실패: ' + e.message + '</div>';
+  }
+}
+
+function renderFx(cur){
+  const rate = cur.exchange_rate || {};
+  const timing = cur.purchase_timing || {};
+  document.getElementById('fxBody').innerHTML = `
+    <div style="display:flex;gap:28px;flex-wrap:wrap;">
+      <div><div class="helper">현재 환율</div><div class="kpi-num">${(rate.exchange_rate ?? timing.current_rate ?? 0).toLocaleString()}<span style="font-size:12px;">원</span></div></div>
+      <div><div class="helper">이동평균 (${timing.data_count ?? '-'}개월)</div><div class="kpi-num">${(timing.rolling_avg ?? 0).toLocaleString()}<span style="font-size:12px;">원</span></div></div>
+      <div><div class="helper">Z-Score</div><div class="kpi-num" style="color:#B4790D;">${timing.z_score ?? '-'}</div></div>
+      <div style="align-self:center;">${recBadge(timing.recommendation)}</div>
+    </div>
+    <div class="helper" style="margin-top:8px;">${timing.reason || ''}</div>
+    ${rate.is_stale ? '<div class="helper" style="color:var(--danger);margin-top:4px;">⚠ 최신 환율 데이터가 7일 이상 경과(stale)</div>' : ''}`;
+}
+
+async function onAircraftChange(){
+  const id = document.getElementById('acSelect').value;
+  document.getElementById('forecastWrap').innerHTML = '<div class="loading">불러오는 중…</div>';
+  document.getElementById('summaryBody').innerHTML = '<div class="loading">불러오는 중…</div>';
+  try{
+    const fc = await jget('/procurement/forecast/' + id);
+    if(fc.error) throw new Error(fc.error);
+    currentForecast = fc;
+    await renderForecast(fc);
+  }catch(e){
+    document.getElementById('forecastWrap').innerHTML = '<div class="err">구매시기 예측 로드 실패: ' + e.message + '</div>';
+    document.getElementById('summaryBody').innerHTML = '<div class="err">-</div>';
+  }
+}
+
+async function getLastPrice(partId){
+  if(priceCache[partId] !== undefined) return priceCache[partId];
+  try{
+    const r = await jget('/components/' + partId + '/last-price');
+    priceCache[partId] = r.last_unit_price_eur ?? null;
+  }catch(e){ priceCache[partId] = null; }
+  return priceCache[partId];
+}
+
+async function renderForecast(fc){
+  const s = fc.summary || {};
+  document.getElementById('summaryBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;">
+      <div>즉시발주 <b class="mono" style="color:var(--danger);">${s['즉시발주'] ?? 0}</b>건</div>
+      <div>지금발주 <b class="mono" style="color:#B4790D;">${s['지금발주'] ?? 0}</b>건</div>
+      <div>발주예정 <b class="mono" style="color:var(--ok);">${s['발주예정'] ?? 0}</b>건</div>
+      <div>여유 <b class="mono">${s['여유'] ?? 0}</b>건</div>
+      <div class="helper" style="margin-top:6px;">연간 비행시간 가정: ${fc.annual_flight_hours}h · 기준일 ${fc.as_of}</div>
+    </div>`;
+
+  const items = (fc.items || []).slice(0, 30);
+  if(!items.length){
+    document.getElementById('forecastWrap').innerHTML = '<div class="panel-body loading">예측 기간 내 도래하는 정비/발주 항목 없음</div>';
+    return;
+  }
+  document.getElementById('forecastWrap').innerHTML = '<div class="panel-body loading">단가 조회 중…</div>';
+  const rateInfo = await jget('/currency-rates').catch(()=>({}));
+  const krwRate = (rateInfo.exchange_rate && rateInfo.exchange_rate.exchange_rate) || (rateInfo.purchase_timing && rateInfo.purchase_timing.current_rate) || 0;
+
+  const rows = await Promise.all(items.map(async it => {
+    const price = await getLastPrice(it.part_id);
+    const qty = it.shortfall > 0 ? it.shortfall : it.required_qty;
+    const estKrw = (price && krwRate) ? Math.round(price * qty * krwRate) : null;
+    return `<tr>
+      <td>${it.nomenclature || ('P/N ' + it.part_id)}</td>
+      <td class="mono">${it.order_by_date}</td>
+      <td><span class="badge badge-muted">${it.rate_timing || '-'}</span></td>
+      <td>${statusTagBadge(it.recommendation)}</td>
+      <td class="mono">${it.current_stock}/${it.required_qty}</td>
+      <td class="mono">${estKrw !== null ? estKrw.toLocaleString() + '원' : (price===null ? '단가없음' : '-')}</td>
+    </tr>`;
+  }));
+  document.getElementById('forecastWrap').innerHTML = `
+    <table><thead><tr><th>부품</th><th>발주기준일</th><th>태그</th><th>상태</th><th>재고/소요</th><th>예상금액</th></tr></thead>
+    <tbody>${rows.join('')}</tbody></table>
+    <div class="helper" style="padding:8px 16px;">예상금액 = 부품 최근단가(EUR) × 부족수량 × 현재 환율(참고용, 실제 발주가와 다를 수 있음)</div>`;
+}
+
+async function calcLanded(){
+  const price = parseFloat(document.getElementById('lcPrice').value);
+  const qty = parseInt(document.getElementById('lcQty').value) || 1;
+  const duty = (parseFloat(document.getElementById('lcDuty').value) || 0) / 100;
+  const freight = parseFloat(document.getElementById('lcFreight').value) || undefined;
+  const academic = document.getElementById('lcAcademic').checked;
+  if(!price || price <= 0){ alert('단가(EUR)를 입력하세요'); return; }
+  const box = document.getElementById('lcResult');
+  box.style.display = 'block';
+  box.innerHTML = '<div class="loading">계산 중…</div>';
+  try{
+    const body = { unit_price_eur: price, order_qty: qty, customs_duty_rate: duty, is_academic: academic };
+    if(freight) body.freight_total_eur = freight;
+    const res = await jpost('/procurement/landed-cost', body);
+    const r = Array.isArray(res) ? res[0] : res;
+    if(r.error){ box.innerHTML = '<div class="err">' + r.error + '</div>'; return; }
+    box.innerHTML = `
+      <div>CIF: <b class="mono">€${r.cif_eur}</b> (${r.cif_krw?.toLocaleString()}원)</div>
+      <div>관세: <b class="mono">${r.duty_krw?.toLocaleString()}원</b> ${r.is_academic ? '(학술감면 적용)' : ''}</div>
+      <div>부가세: <b class="mono">${r.vat_krw?.toLocaleString()}원</b></div>
+      <div>직구 총원가: <b class="mono" style="color:var(--accent);">${r.total_landed_krw?.toLocaleString()}원</b></div>
+      <div>기존 대행방식 총액: <b class="mono">${r.agent_total_krw?.toLocaleString()}원</b></div>
+      <div>절감액: <b class="mono" style="color:var(--ok);">${r.savings_krw?.toLocaleString()}원 (${r.savings_pct}%)</b></div>
+      <div class="helper" style="margin-top:6px;">${r.assumptions_note || ''}</div>`;
+  }catch(e){
+    box.innerHTML = '<div class="err">계산 실패: ' + e.message + '</div>';
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>
