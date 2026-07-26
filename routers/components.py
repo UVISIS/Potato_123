@@ -1,15 +1,16 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import supabase
-from routers.errors import component_not_found, inventory_not_found, reorder_not_found, insufficient_stock
+from routers.errors import component_not_found, inventory_not_found, reorder_not_found, insufficient_stock, invalid_input
 # fn 연동
 from functions.csc02.fn4_get_inventory import get_inventory as fn4_get_inventory
 from functions.csc03.fn7_analyze_safety_stock import analyze_safety_stock
 from functions.csc02.fn13_get_maintenance_bom import get_maintenance_bom
+from functions.csc02.fn20_upload_quote import upload_quote as fn20_upload_quote
 
 _BOM_MODEL_MAP = {
     "Diamond DA40 NG": "DA40NG",
@@ -120,6 +121,31 @@ def update_component(component_id: int, data: ComponentUpdate):
     if not response.data:
         component_not_found(component_id)
     return response.data[0]
+
+
+@router.post("/components/upload-quote")
+async def upload_quote_excel(file: UploadFile = File(...)):
+    """견적서 엑셀 업로드 (fn20 래핑)
+
+    - 매칭 기준: 부품번호(P/N). 품명은 고정값이며 명칭 정정이 필요할 때만 갱신됨.
+    - 유로단가(unit_price_eur)는 항상 최신값으로 갱신.
+    - 원화 기록은 price_history 테이블에 이력으로 누적 보존 (덮어쓰지 않음).
+    - DB에 없는 부품번호는 자동 등록하지 않고 unmatched 목록으로 반환
+      (담당자 검토 후 별도 신규 등록 절차 진행).
+
+    ⚠️ DB 선행 작업 필요:
+      docs/schema_price_mapping_feature.sql 실행
+      (components.nomenclature_kr 컬럼, price_history 테이블)
+    """
+    if not file.filename.endswith((".xlsx", ".xlsm")):
+        invalid_input("엑셀 파일(.xlsx)만 업로드 가능합니다")
+
+    contents = await file.read()
+    try:
+        result = fn20_upload_quote(file_bytes=contents, source_file=file.filename)
+    except ValueError as e:
+        invalid_input(str(e))
+    return result
 
 
 # ── 재고 관리 ──────────────────────────────────
